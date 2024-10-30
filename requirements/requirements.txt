@@ -1,1 +1,6 @@
 # requirements for the production project.
+
+apsw==3.46.1.0
+fastapi==0.115.3
+simple-sign==0.1.0-rc.2
+uvicorn==0.32.0

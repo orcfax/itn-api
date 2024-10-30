@@ -23,6 +23,7 @@ ignore-patterns=
     ^(.+).html,
     ^(.+).htm,
     ^(.+).svg,
+    ^(.+).env,
     ^justfile,
     ^\.,
 

@@ -1,6 +1,6 @@
 """Placeholder tests."""
 
-from src.template.template import main
+from src.itn_api.api import main
 
 
 def test_none():
