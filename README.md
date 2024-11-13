@@ -1,6 +1,6 @@
-# Template repository
+# ITN API
 
-Template repository for Python projects.
+Helpers for gathering data for the Orcfax ITN.
 
 ## Developer install
 
