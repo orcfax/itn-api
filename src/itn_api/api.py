@@ -24,7 +24,7 @@ import apsw
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 
 try:
     import reports
@@ -157,6 +157,18 @@ async def get_participants_counts_day(
     return report
 
 
+@app.get(
+    "/get_participants_counts_csv", tags=[TAG_STATISTICS], response_class=HTMLResponse
+)
+async def get_participants_counts_day_csv(
+    date_start: str = "1970-01-01", date_end: str = "1970-01-03"
+) -> str:
+    """Return participants in ITN."""
+    report = reports.get_participants_counts_date_range(app, date_start, date_end)
+    csv_report = reports.generate_participant_count_csv(report)
+    return csv_report
+
+
 @app.get("/date_range", tags=[TAG_INFO])
 async def get_date_range():
     """Return the date range of all statistics."""
@@ -164,9 +176,14 @@ async def get_date_range():
 
 
 @app.get("/itn_aliases_and_staking", tags=[TAG_INFO])
-async def get_itn_aliases_and_staking(min_stake: int = 500000):
-    """Return the date range of all statistics."""
-    return reports.get_all_license_holders(app, min_stake)
+async def get_itn_aliases_and_staking(min_stake: int = 500000, license_no: str = None):
+    """Return ITN aliases and stake values.
+
+
+    Optionally: enter a license number, e.g. `#001` to see the details
+    of a specific license.
+    """
+    return reports.get_all_license_holders(app, min_stake, license_no)
 
 
 def main():
@@ -175,7 +192,7 @@ def main():
     parser = argparse.ArgumentParser(
         prog="itn-api",
         description="ITN API",
-        epilog="for more information visit https://ffdev.info/",
+        epilog="for more information visit https://docs.orcfax.io/itn-overview",
     )
 
     parser.add_argument(

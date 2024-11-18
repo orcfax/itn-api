@@ -1,12 +1,13 @@
 """Reports we're generating"""
 
-# pylint: disable=R0917,R0913
+# pylint: disable=R0917,R0913,R0914
 
 import logging
 from collections import Counter
 from dataclasses import dataclass
 from typing import Tuple
 
+import humanize
 from fastapi import FastAPI
 
 try:
@@ -41,7 +42,9 @@ def _search_aliases(aliases: list[simple_sign_helpers.Alias], addr: str):
     return alias_found
 
 
-def _get_all_alias_addr_data(kupo_url: str, kupo_port: str, min_stake: int):
+def _get_all_alias_addr_data(
+    kupo_url: str, kupo_port: str, min_stake: int, license_no: str
+):
     """Retrieve all alias and address data for all staking addresses.
 
     E.g. this is useful for understanding network state.
@@ -53,12 +56,17 @@ def _get_all_alias_addr_data(kupo_url: str, kupo_port: str, min_stake: int):
     fact_holders = list(staked.keys())
     holders = list(set(license_holders).intersection(fact_holders))
     all_license_data = _collate_simple(holders, staked, licenses, aliases)
+    if license_no:
+        needle = f"Validator License {license_no}"
+        return [lic for lic in all_license_data if needle in lic.licenses]
     return all_license_data
 
 
-def get_all_license_holders(app: FastAPI, min_stake: int) -> dict:
+def get_all_license_holders(app: FastAPI, min_stake: int, license_no: str) -> dict:
     """Get all license holders."""
-    return _get_all_alias_addr_data(app.state.kupo_url, app.state.kupo_port, min_stake)
+    return _get_all_alias_addr_data(
+        app.state.kupo_url, app.state.kupo_port, min_stake, license_no
+    )
 
 
 def _collate_simple(
@@ -84,6 +92,9 @@ def _collate_simple(
                 alias=alias,
             )
         )
+    all_holders = sorted(
+        all_holders, key=lambda all_holders: all_holders.licenses, reverse=False
+    )
     return all_holders
 
 
@@ -160,6 +171,7 @@ def _process_json_report(
     """Create the JSON report from the given data."""
     # Combine counts into a report.
     minutes_in_range = helpers.get_minutes(date_start, date_end)
+    days_in_range = minutes_in_range / helpers.MINUTES_DAY
     counts = {}
     for addr, value in addr_minute_values.items():
         total_mins = len(set(value))
@@ -184,6 +196,7 @@ def _process_json_report(
     report["max_possible_data_points"] = minutes_in_range * len(feeds)
     report["data"] = counts
     report["expected_feeds"] = feeds
+    report["total_days_in_date_range"] = int(days_in_range)
     return report
 
 
@@ -219,6 +232,48 @@ def _get_participant_data_by_date_range(
         """
     )
     return list(participants)
+
+
+def generate_participant_count_csv(report: dict) -> str:
+    """Convert JSON data into a CSV for ease of use."""
+
+    max_possible = report.get("max_possible_data_points")
+    start = report.get("start")
+    end = report.get("end")
+    max_feeds = report.get("expected_number_of_feeds", 1)
+    data = report.get("data", {})
+    total_days_in_range = report.get("total_days_in_date_range", 0)
+    feed_cols = [""] * (max_feeds * 2)
+    csv_header = (
+        f"participant, license, stake, days_in_range, max_possible, start, end, "
+        f"total_collected, total_data_points, avg_per_feed, {",".join(feed_cols)}"
+    )
+    rows = []
+    for stake_addr, value in data.items():
+        participant = stake_addr
+        license_no = value.get("license", "").replace("Validator License", "").strip()
+        stake = humanize.intcomma(int(value.get("stake", 0) / 1000000)).replace(
+            ",", "."
+        )
+        total_data_points = value.get("total_data_points", 0)
+        average_per_feed = value.get("average_mins_collecting_per_feed", 0)
+        total_collected = value.get("number_of_feeds_collected", 0)
+        participant_feeds = [""] * max_feeds
+        for idx, count in enumerate(value.get("feeds_count", [])):
+            participant_feeds[idx] = ",".join([c.strip() for c in count.split(":")])
+        row = (
+            f'{participant}, "{license_no}", {stake}, {total_days_in_range}, '
+            f'"{humanize.intcomma(max_possible)}",'
+            f'{start}, {end}, "{humanize.intcomma(total_collected)}",'
+            f'"{humanize.intcomma(total_data_points)}", '
+            f' "{humanize.intcomma(average_per_feed)}", '
+            f"{",".join(participant_feeds)}"
+        )
+        rows.append(row.strip())
+    csv = f"{csv_header}\n"
+    for row in rows:
+        csv = f"{csv}{row}\n"
+    return csv
 
 
 async def get_date_ranges(app: FastAPI):
