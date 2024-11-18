@@ -2,6 +2,15 @@
 
 Helpers for gathering data for the Orcfax ITN.
 
+## Running the API
+
+Basic operation with `requirements/requirements.txt` installed in a virtual
+environment:
+
+```sh
+uvicorn src.itn_api.api:app --reload
+```
+
 ## Developer install
 
 ### pip
