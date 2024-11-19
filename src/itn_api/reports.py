@@ -285,7 +285,7 @@ def generate_participant_count_csv(report: dict) -> str:
         rows.append(row.strip())
     csv_header = (
         f"participant, license, stake, days_in_range, max_possible, start, end, "
-        f"total_collected, total_data_points, avg_per_feed, {",".join(feed_cols)}"
+        f"total_collected, total_data_points, avg_per_feed, {','.join(feed_cols)}"
     )
     csv = f"{csv_header}\n"
     for row in rows:
