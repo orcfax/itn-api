@@ -2,7 +2,7 @@
 # file: /etc/systemd/system/itn-api.service
 
 [Unit]
-Description      = Ogmios service
+Description      = ITN-api service
 Wants            = network-online.target
 After            = network-online.target
 
@@ -10,7 +10,7 @@ After            = network-online.target
 User             = orcfax
 Type             = simple
 WorkingDirectory = /home/orcfax/itn-api/
-ExecStart        = /bin/bash -c '/home/orcfax/itn-api/start_itn_api.sh'
+ExecStart        = /bin/bash -c '/home/orcfax/itn-api/service/start_itn_api.sh'
 KillSignal       = SIGINT
 TimeoutStopSec   = 300
 LimitNOFILE      = 32768
