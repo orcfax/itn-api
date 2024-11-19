@@ -27,12 +27,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse
 
 try:
+    import htm_helpers
     import reports
 except ImportError:
     try:
-        from src.itn_api import reports
+        from src.itn_api import htm_helpers, reports
     except ImportError:
-        from itn_api import reports
+        from itn_api import htm_helpers, reports
 
 
 # Set up logging.
@@ -176,14 +177,53 @@ async def get_date_range():
 
 
 @app.get("/itn_aliases_and_staking", tags=[TAG_INFO])
-async def get_itn_aliases_and_staking(min_stake: int = 500000, license_no: str = None):
+async def get_itn_aliases_and_staking(
+    min_stake: int = 500000, license_no: str = None
+) -> dict:
     """Return ITN aliases and stake values.
-
 
     Optionally: enter a license number, e.g. `#001` to see the details
     of a specific license.
     """
     return reports.get_all_license_holders(app, min_stake, license_no)
+
+
+@app.get("/itn_aliases_and_staking_csv", tags=[TAG_INFO], response_class=HTMLResponse)
+async def get_itn_aliases_and_staking_csv(
+    min_stake: int = 500000, sort: str = "stake"
+) -> str:
+    """Return ITN aliases and stake values.
+
+    Optionally: enter a license number, e.g. `#001` to see the details
+    of a specific license.
+    """
+    return reports.get_all_license_holders_csv(app, min_stake, sort)
+
+
+@app.get("/participants", tags=[TAG_HTMX], response_class=HTMLResponse)
+async def get_itn_participants() -> str:
+    """Return ITN aliases and stake values.
+
+    Optionally: enter a license number, e.g. `#001` to see the details
+    of a specific license.
+    """
+    all_holders = reports.get_all_license_holders(app, 0, None)
+    htmx = htm_helpers.aliases_to_html(all_holders)
+    return htmx.strip()
+
+
+@app.get("/online_collectors", tags=[TAG_HTMX], response_class=HTMLResponse)
+async def get_online_collectors() -> str:
+    """Return ITN aliases and stake values.
+
+    Optionally: enter a license number, e.g. `#001` to see the details
+    of a specific license.
+    """
+    participants_count_total = app.state.connection.execute(
+        "select address, count(*) as count from data_points group by address order by count desc;"
+    )
+    htmx = htm_helpers.participants_count_table(participants_count_total)
+    return htmx.strip()
 
 
 def main():

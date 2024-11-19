@@ -5,7 +5,7 @@
 import logging
 from collections import Counter
 from dataclasses import dataclass
-from typing import Tuple
+from typing import List, Tuple
 
 import humanize
 from fastapi import FastAPI
@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 class LicenseHolder:
     staking: str
     staked: int
-    licenses: [str]
+    licenses: List[str]
     alias: str = ""
 
 
@@ -64,9 +64,28 @@ def _get_all_alias_addr_data(
 
 def get_all_license_holders(app: FastAPI, min_stake: int, license_no: str) -> dict:
     """Get all license holders."""
-    return _get_all_alias_addr_data(
+    alias_addr_data = _get_all_alias_addr_data(
         app.state.kupo_url, app.state.kupo_port, min_stake, license_no
     )
+    return alias_addr_data
+
+
+def get_all_license_holders_csv(app: FastAPI, min_stake: int, sort: str) -> str:
+    """Return all license holder info as a CSV."""
+    alias_addr_data = _get_all_alias_addr_data(
+        app.state.kupo_url, app.state.kupo_port, min_stake, None
+    )
+    if sort.lower().strip() == "stake":
+        alias_addr_data = sorted(
+            alias_addr_data,
+            key=lambda alias_addr_data: alias_addr_data.staked,
+            reverse=True,
+        )
+    csv = "idx,staking,license,value\n"
+    for idx, data in enumerate(alias_addr_data, 1):
+        stake = humanize.intcomma(data.staked).replace(",", ".")
+        csv = f"{csv}{idx:0>4}, {data.staking}, {" ".join(data.licenses)}, {stake}\n"
+    return csv
 
 
 def _collate_simple(
@@ -87,7 +106,7 @@ def _collate_simple(
         all_holders.append(
             LicenseHolder(
                 staking=holder,
-                staked=stake,
+                staked=int(stake / 1000000),
                 licenses=held,
                 alias=alias,
             )
@@ -244,17 +263,11 @@ def generate_participant_count_csv(report: dict) -> str:
     data = report.get("data", {})
     total_days_in_range = report.get("total_days_in_date_range", 0)
     feed_cols = [""] * (max_feeds * 2)
-    csv_header = (
-        f"participant, license, stake, days_in_range, max_possible, start, end, "
-        f"total_collected, total_data_points, avg_per_feed, {",".join(feed_cols)}"
-    )
     rows = []
     for stake_addr, value in data.items():
         participant = stake_addr
         license_no = value.get("license", "").replace("Validator License", "").strip()
-        stake = humanize.intcomma(int(value.get("stake", 0) / 1000000)).replace(
-            ",", "."
-        )
+        stake = humanize.intcomma(int(value.get("stake", 0))).replace(",", ".")
         total_data_points = value.get("total_data_points", 0)
         average_per_feed = value.get("average_mins_collecting_per_feed", 0)
         total_collected = value.get("number_of_feeds_collected", 0)
@@ -270,6 +283,10 @@ def generate_participant_count_csv(report: dict) -> str:
             f"{",".join(participant_feeds)}"
         )
         rows.append(row.strip())
+    csv_header = (
+        f"participant, license, stake, days_in_range, max_possible, start, end, "
+        f"total_collected, total_data_points, avg_per_feed, {",".join(feed_cols)}"
+    )
     csv = f"{csv_header}\n"
     for row in rows:
         csv = f"{csv}{row}\n"

@@ -1,0 +1,38 @@
+<html>
+   <head>
+      <meta charset="UTF-8">
+      <title>ITN Diagnostics | Orcfax</title>
+      <link rel="icon" href="/img/favicon.ico">
+      <script src="https://unpkg.com/htmx.org@2.0.0/dist/htmx.min.js"></script>
+      <meta name="htmx-config" content='{"selfRequestsOnly": false}'>
+      <script>
+         document.documentElement.setAttribute("data-theme", "dark");
+      </script>
+      <link rel="stylesheet" href="/assets/css/styles.css">
+   </head>
+   <body>
+      <h1>ITN diagnostics</h1>
+      <div>
+      <h2>License Holders</h2>
+      <div>
+      <div>
+      <div
+         hx-get="http://127.0.0.1:24001/participants"
+         hx-trigger="load"
+         hx-swap="innerHTML"
+         />
+      </div>
+      <hr>
+      <h2>Active collector counts</h2>
+      <div
+         hx-get="http://127.0.0.1:24001/online_collectors"
+         hx-trigger="load"
+         hx-swap="innerHTML"
+         />
+      </div>
+      <hr>
+      <div class="footer__bottom text--center">
+         <div class="footer__copyright">ITN | Diagnostics</div>
+      </div>
+   </body>
+</html>
