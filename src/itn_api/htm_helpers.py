@@ -16,6 +16,9 @@ def aliases_to_html(alias_report: dict) -> str:
 
     """
 
+    if not alias_report:
+        return "no alias data available"
+
     head = """
 <table>
     <tr>
