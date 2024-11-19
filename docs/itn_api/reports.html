@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.1">
-<title>src API documentation</title>
-<meta name="description" content="">
+<title>src.itn_api.reports API documentation</title>
+<meta name="description" content="Reports we&#39;re generating">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -22,24 +22,85 @@ hljs.highlightAll();
 <main>
 <article id="content">
 <header>
-<h1 class="title">Namespace <code>src</code></h1>
+<h1 class="title">Module <code>src.itn_api.reports</code></h1>
 </header>
 <section id="section-intro">
+<p>Reports we're generating</p>
 </section>
 <section>
-<h2 class="section-title" id="header-submodules">Sub-modules</h2>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt><code class="name"><a title="src.itn_api" href="itn_api/index.html">src.itn_api</a></code></dt>
+<dt id="src.itn_api.reports.generate_participant_count_csv"><code class="name flex">
+<span>def <span class="ident">generate_participant_count_csv</span></span>(<span>report: dict) ‑> str</span>
+</code></dt>
 <dd>
-<div class="desc"><p>Package level init.</p></div>
+<div class="desc"><p>Convert JSON data into a CSV for ease of use.</p></div>
+</dd>
+<dt id="src.itn_api.reports.get_all_license_holders"><code class="name flex">
+<span>def <span class="ident">get_all_license_holders</span></span>(<span>app: fastapi.applications.FastAPI, min_stake: int, license_no: str) ‑> dict</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get all license holders.</p></div>
+</dd>
+<dt id="src.itn_api.reports.get_all_license_holders_csv"><code class="name flex">
+<span>def <span class="ident">get_all_license_holders_csv</span></span>(<span>app: fastapi.applications.FastAPI, min_stake: int, sort: str) ‑> str</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Return all license holder info as a CSV.</p></div>
+</dd>
+<dt id="src.itn_api.reports.get_date_ranges"><code class="name flex">
+<span>async def <span class="ident">get_date_ranges</span></span>(<span>app: fastapi.applications.FastAPI)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Return min and max dates from the database.</p></div>
 </dd>
 </dl>
 </section>
 <section>
-</section>
-<section>
-</section>
-<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="src.itn_api.reports.LicenseHolder"><code class="flex name class">
+<span>class <span class="ident">LicenseHolder</span></span>
+<span>(</span><span>staking: str, staked: int, licenses: List[str], alias: str = '')</span>
+</code></dt>
+<dd>
+<div class="desc"><p>LicenseHolder(staking: str, staked: int, licenses: List[str], alias: str = '')</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@dataclass
+class LicenseHolder:
+    staking: str
+    staked: int
+    licenses: List[str]
+    alias: str = &#34;&#34;</code></pre>
+</details>
+<h3>Class variables</h3>
+<dl>
+<dt id="src.itn_api.reports.LicenseHolder.alias"><code class="name">var <span class="ident">alias</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.itn_api.reports.LicenseHolder.licenses"><code class="name">var <span class="ident">licenses</span> : List[str]</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.itn_api.reports.LicenseHolder.staked"><code class="name">var <span class="ident">staked</span> : int</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.itn_api.reports.LicenseHolder.staking"><code class="name">var <span class="ident">staking</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+</dl>
 </section>
 </article>
 <nav id="sidebar">
@@ -47,9 +108,30 @@ hljs.highlightAll();
 <ul></ul>
 </div>
 <ul id="index">
-<li><h3><a href="#header-submodules">Sub-modules</a></h3>
+<li><h3>Super-module</h3>
 <ul>
-<li><code><a title="src.itn_api" href="itn_api/index.html">src.itn_api</a></code></li>
+<li><code><a title="src.itn_api" href="index.html">src.itn_api</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="src.itn_api.reports.generate_participant_count_csv" href="#src.itn_api.reports.generate_participant_count_csv">generate_participant_count_csv</a></code></li>
+<li><code><a title="src.itn_api.reports.get_all_license_holders" href="#src.itn_api.reports.get_all_license_holders">get_all_license_holders</a></code></li>
+<li><code><a title="src.itn_api.reports.get_all_license_holders_csv" href="#src.itn_api.reports.get_all_license_holders_csv">get_all_license_holders_csv</a></code></li>
+<li><code><a title="src.itn_api.reports.get_date_ranges" href="#src.itn_api.reports.get_date_ranges">get_date_ranges</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="src.itn_api.reports.LicenseHolder" href="#src.itn_api.reports.LicenseHolder">LicenseHolder</a></code></h4>
+<ul class="">
+<li><code><a title="src.itn_api.reports.LicenseHolder.alias" href="#src.itn_api.reports.LicenseHolder.alias">alias</a></code></li>
+<li><code><a title="src.itn_api.reports.LicenseHolder.licenses" href="#src.itn_api.reports.LicenseHolder.licenses">licenses</a></code></li>
+<li><code><a title="src.itn_api.reports.LicenseHolder.staked" href="#src.itn_api.reports.LicenseHolder.staked">staked</a></code></li>
+<li><code><a title="src.itn_api.reports.LicenseHolder.staking" href="#src.itn_api.reports.LicenseHolder.staking">staking</a></code></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>

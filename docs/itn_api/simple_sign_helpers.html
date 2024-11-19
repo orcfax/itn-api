@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.1">
-<title>src.template API documentation</title>
-<meta name="description" content="Package level init.">
+<title>src.itn_api.simple_sign_helpers API documentation</title>
+<meta name="description" content="Helpers for working with simple-sign to retrieve license data.">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -22,25 +22,80 @@ hljs.highlightAll();
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>src.template</code></h1>
+<h1 class="title">Module <code>src.itn_api.simple_sign_helpers</code></h1>
 </header>
 <section id="section-intro">
-<p>Package level init.</p>
+<p>Helpers for working with simple-sign to retrieve license data.</p>
 </section>
 <section>
-<h2 class="section-title" id="header-submodules">Sub-modules</h2>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt><code class="name"><a title="src.template.template" href="template.html">src.template.template</a></code></dt>
+<dt id="src.itn_api.simple_sign_helpers.get_itn_alias"><code class="name flex">
+<span>def <span class="ident">get_itn_alias</span></span>(<span>kupo_url: str, kupo_port: str)</span>
+</code></dt>
 <dd>
-<div class="desc"><p>Python template repository …</p></div>
+<div class="desc"><p>Get builder festival aliased addresses.</p></div>
+</dd>
+<dt id="src.itn_api.simple_sign_helpers.get_licenses"><code class="name flex">
+<span>def <span class="ident">get_licenses</span></span>(<span>kupo_url: str, kupo_port: int)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get license holders.</p></div>
+</dd>
+<dt id="src.itn_api.simple_sign_helpers.get_staked"><code class="name flex">
+<span>def <span class="ident">get_staked</span></span>(<span>kupo_url: str, kupo_port: int, min_stake=500000)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get $FACT staking values.</p></div>
+</dd>
+<dt id="src.itn_api.simple_sign_helpers.identify_aliases_callback"><code class="name flex">
+<span>def <span class="ident">identify_aliases_callback</span></span>(<span>md: list[dict]) ‑> list[simple_sign.types.Alias]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Return an alias from retrieved kupo metadata.</p></div>
 </dd>
 </dl>
 </section>
 <section>
-</section>
-<section>
-</section>
-<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="src.itn_api.simple_sign_helpers.LicenseHolder"><code class="flex name class">
+<span>class <span class="ident">LicenseHolder</span></span>
+<span>(</span><span>staking_addr: str, licenses: list[str], fact_held: int)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>LicenseHolder(staking_addr: str, licenses: list[str], fact_held: int)</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@dataclass
+class LicenseHolder:
+    staking_addr: str
+    licenses: list[str]
+    fact_held: int</code></pre>
+</details>
+<h3>Class variables</h3>
+<dl>
+<dt id="src.itn_api.simple_sign_helpers.LicenseHolder.fact_held"><code class="name">var <span class="ident">fact_held</span> : int</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.itn_api.simple_sign_helpers.LicenseHolder.licenses"><code class="name">var <span class="ident">licenses</span> : list[str]</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.itn_api.simple_sign_helpers.LicenseHolder.staking_addr"><code class="name">var <span class="ident">staking_addr</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+</dl>
 </section>
 </article>
 <nav id="sidebar">
@@ -50,12 +105,27 @@ hljs.highlightAll();
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="src" href="../index.html">src</a></code></li>
+<li><code><a title="src.itn_api" href="index.html">src.itn_api</a></code></li>
 </ul>
 </li>
-<li><h3><a href="#header-submodules">Sub-modules</a></h3>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="src.itn_api.simple_sign_helpers.get_itn_alias" href="#src.itn_api.simple_sign_helpers.get_itn_alias">get_itn_alias</a></code></li>
+<li><code><a title="src.itn_api.simple_sign_helpers.get_licenses" href="#src.itn_api.simple_sign_helpers.get_licenses">get_licenses</a></code></li>
+<li><code><a title="src.itn_api.simple_sign_helpers.get_staked" href="#src.itn_api.simple_sign_helpers.get_staked">get_staked</a></code></li>
+<li><code><a title="src.itn_api.simple_sign_helpers.identify_aliases_callback" href="#src.itn_api.simple_sign_helpers.identify_aliases_callback">identify_aliases_callback</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
-<li><code><a title="src.template.template" href="template.html">src.template.template</a></code></li>
+<li>
+<h4><code><a title="src.itn_api.simple_sign_helpers.LicenseHolder" href="#src.itn_api.simple_sign_helpers.LicenseHolder">LicenseHolder</a></code></h4>
+<ul class="">
+<li><code><a title="src.itn_api.simple_sign_helpers.LicenseHolder.fact_held" href="#src.itn_api.simple_sign_helpers.LicenseHolder.fact_held">fact_held</a></code></li>
+<li><code><a title="src.itn_api.simple_sign_helpers.LicenseHolder.licenses" href="#src.itn_api.simple_sign_helpers.LicenseHolder.licenses">licenses</a></code></li>
+<li><code><a title="src.itn_api.simple_sign_helpers.LicenseHolder.staking_addr" href="#src.itn_api.simple_sign_helpers.LicenseHolder.staking_addr">staking_addr</a></code></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>

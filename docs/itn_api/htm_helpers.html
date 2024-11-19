@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.1">
-<title>src.template.template API documentation</title>
-<meta name="description" content="Python template repository …">
+<title>src.itn_api.htm_helpers API documentation</title>
+<meta name="description" content="Helpers specifically for outputting HTML, i.e. for HTMX.">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -22,12 +22,10 @@ hljs.highlightAll();
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>src.template.template</code></h1>
+<h1 class="title">Module <code>src.itn_api.htm_helpers</code></h1>
 </header>
 <section id="section-intro">
-<p>Python template repository.</p>
-<p>Baseline template for future Python code related to this project.</p>
-<p>Replace this docstring and code below with your own code as required.</p>
+<p>Helpers specifically for outputting HTML, i.e. for HTMX.</p>
 </section>
 <section>
 </section>
@@ -36,11 +34,25 @@ hljs.highlightAll();
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="src.template.template.main"><code class="name flex">
-<span>def <span class="ident">main</span></span>(<span>) ‑> None</span>
+<dt id="src.itn_api.htm_helpers.aliases_to_html"><code class="name flex">
+<span>def <span class="ident">aliases_to_html</span></span>(<span>alias_report: dict) ‑> str</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Primary entry point for this script.</p></div>
+<div class="desc"><p>Take the alias report and convert it to HTML.</p>
+<p>e.g.</p>
+<pre><code>LicenseHolder(
+    staking='stake1uxta2uanum3zphefxkeu5nr5umykkr5rqz0exujddalhadgtmzxas',
+    staked=500000,
+    licenses=['Validator License #099'],
+    alias=''
+)
+</code></pre></div>
+</dd>
+<dt id="src.itn_api.htm_helpers.participants_count_table"><code class="name flex">
+<span>def <span class="ident">participants_count_table</span></span>(<span>participants_count_total)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Return a table with active participant counts.</p></div>
 </dd>
 </dl>
 </section>
@@ -54,12 +66,13 @@ hljs.highlightAll();
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="src.template" href="index.html">src.template</a></code></li>
+<li><code><a title="src.itn_api" href="index.html">src.itn_api</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
-<li><code><a title="src.template.template.main" href="#src.template.template.main">main</a></code></li>
+<li><code><a title="src.itn_api.htm_helpers.aliases_to_html" href="#src.itn_api.htm_helpers.aliases_to_html">aliases_to_html</a></code></li>
+<li><code><a title="src.itn_api.htm_helpers.participants_count_table" href="#src.itn_api.htm_helpers.participants_count_table">participants_count_table</a></code></li>
 </ul>
 </li>
 </ul>
