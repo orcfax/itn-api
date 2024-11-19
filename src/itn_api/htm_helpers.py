@@ -70,7 +70,7 @@ def participants_count_table(participants_count_total):
     """.strip()
 
     rows = ""
-    for stake_key, count in participants_count_total:
+    for stake_key, count in participants_count_total.items():
         row = f"""
 <tr>
     <td>{stake_key}</td>

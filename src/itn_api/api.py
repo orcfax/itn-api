@@ -218,6 +218,7 @@ async def get_online_collectors() -> str:
         )
     except apsw.SQLError:
         return "zero collectors online"
+    participants_count_total = dict(participants_count_total)
     htmx = htm_helpers.participants_count_table(participants_count_total)
     return htmx.strip()
 
