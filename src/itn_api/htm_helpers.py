@@ -1,6 +1,10 @@
 """Helpers specifically for outputting HTML, i.e. for HTMX."""
 
+import logging
+
 import humanize
+
+logger = logging.getLogger(__name__)
 
 
 def aliases_to_html(alias_report: dict) -> str:
@@ -16,6 +20,8 @@ def aliases_to_html(alias_report: dict) -> str:
         )
 
     """
+
+    logging.info("formatting alias table")
 
     if not alias_report:
         return "no alias data available"
@@ -49,6 +55,8 @@ def aliases_to_html(alias_report: dict) -> str:
 
 def participants_count_table(participants_count_total):
     """Return a table with active participant counts."""
+
+    logging.info("formatting participants table")
 
     if not participants_count_total:
         return "zero collectors online"

@@ -133,9 +133,12 @@ def redirect_root_to_docs():
 @app.get("/get_active_participants", tags=[TAG_STATISTICS])
 async def get_active_participants():
     """Return participants in the ITN database."""
-    participants = app.state.connection.execute(
-        "select distinct address from data_points;"
-    )
+    try:
+        participants = app.state.connection.execute(
+            "select distinct address from data_points;"
+        )
+    except apsw.SQLError as err:
+        return {"error": f"{err}"}
     data = [participant[0] for participant in participants]
     return data
 
@@ -143,9 +146,12 @@ async def get_active_participants():
 @app.get("/get_participants_counts_total", tags=[TAG_STATISTICS])
 async def get_participants_counts_total():
     """Return participants total counts."""
-    participants_count_total = app.state.connection.execute(
-        "select count(*) as count, address from data_points group by address order by count desc;"
-    )
+    try:
+        participants_count_total = app.state.connection.execute(
+            "select count(*) as count, address from data_points group by address order by count desc;"
+        )
+    except apsw.SQLError as err:
+        return {"error": f"{err}"}
     return participants_count_total
 
 
@@ -206,9 +212,12 @@ async def get_itn_participants() -> str:
 @app.get("/online_collectors", tags=[TAG_HTMX], response_class=HTMLResponse)
 async def get_online_collectors() -> str:
     """Return ITN aliases and collector counts."""
-    participants_count_total = app.state.connection.execute(
-        "select address, count(*) as count from data_points group by address order by count desc;"
-    )
+    try:
+        participants_count_total = app.state.connection.execute(
+            "select address, count(*) as count from data_points group by address order by count desc;"
+        )
+    except apsw.SQLError:
+        return "zero collectors online"
     htmx = htm_helpers.participants_count_table(participants_count_total)
     return htmx.strip()
 

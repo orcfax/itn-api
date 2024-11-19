@@ -8,16 +8,35 @@
       <script>
          document.documentElement.setAttribute("data-theme", "dark");
       </script>
-      <link rel="stylesheet" href="/diagnostics/assets/css/styles.css">
+      <link rel="stylesheet" href="diagnostics/assets/css/styles.css">
+      <!-- htmx path-params -->
+      <script>
+         // Inspired by: https://htmx.org/extensions/path-params/
+         htmx.defineExtension('pronom-api-params', {
+             onEvent: function(name, evt) {
+                 if (name === "htmx:configRequest") {
+                     evt.detail.path = evt.detail.path.replace(/{([^}]+)}/g, function (_, param) {
+                         var val = evt.detail.parameters[param];
+                         delete evt.detail.parameters[param];
+                         return val === undefined ? "{" + param + "}" : val;
+                 })
+                 }
+             }
+         });
+
+      </script>
    </head>
-   <body>
+   <body
+      hx-ext="pronom-api-params"
+      hx-vals='{"baseURLLocal": "http://0.0.0.0:24001", "baseURL": "https://itn.0.orcfax.io"}'>
+      >
       <h1>ITN diagnostics</h1>
       <div>
       <h2>License holders</h2>
       <div>
       <div>
       <div
-         hx-get="http://127.0.0.1:24001/participants"
+         hx-get="{baseURL}/api/participants"
          hx-trigger="load"
          hx-swap="innerHTML"
          />
@@ -25,7 +44,7 @@
       <hr>
       <h2>Active collector counts</h2>
       <div
-         hx-get="http://127.0.0.1:24001/online_collectors"
+         hx-get="{baseURL}/api/online_collectors"
          hx-trigger="load"
          hx-swap="innerHTML"
          />
