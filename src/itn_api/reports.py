@@ -84,7 +84,7 @@ def get_all_license_holders_csv(app: FastAPI, min_stake: int, sort: str) -> str:
     csv = "idx,staking,license,value\n"
     for idx, data in enumerate(alias_addr_data, 1):
         stake = humanize.intcomma(data.staked).replace(",", ".")
-        csv = f"{csv}{idx:0>4}, {data.staking}, {" ".join(data.licenses)}, {stake}\n"
+        csv = f"{csv}{idx:0>4}, {data.staking}, {' '.join(data.licenses)}, {stake}\n"
     return csv
 
 
