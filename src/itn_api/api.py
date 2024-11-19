@@ -192,21 +192,13 @@ async def get_itn_aliases_and_staking(
 async def get_itn_aliases_and_staking_csv(
     min_stake: int = 500000, sort: str = "stake"
 ) -> str:
-    """Return ITN aliases and stake values.
-
-    Optionally: enter a license number, e.g. `#001` to see the details
-    of a specific license.
-    """
+    """Return ITN aliases and stake values."""
     return reports.get_all_license_holders_csv(app, min_stake, sort)
 
 
 @app.get("/participants", tags=[TAG_HTMX], response_class=HTMLResponse)
 async def get_itn_participants() -> str:
-    """Return ITN aliases and stake values.
-
-    Optionally: enter a license number, e.g. `#001` to see the details
-    of a specific license.
-    """
+    """Return ITN aliases and licenses."""
     all_holders = reports.get_all_license_holders(app, 0, None)
     htmx = htm_helpers.aliases_to_html(all_holders)
     return htmx.strip()
@@ -214,11 +206,7 @@ async def get_itn_participants() -> str:
 
 @app.get("/online_collectors", tags=[TAG_HTMX], response_class=HTMLResponse)
 async def get_online_collectors() -> str:
-    """Return ITN aliases and stake values.
-
-    Optionally: enter a license number, e.g. `#001` to see the details
-    of a specific license.
-    """
+    """Return ITN aliases and collector counts."""
     participants_count_total = app.state.connection.execute(
         "select address, count(*) as count from data_points group by address order by count desc;"
     )
