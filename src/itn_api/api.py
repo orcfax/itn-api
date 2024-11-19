@@ -95,12 +95,13 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="api.itn.orcfax.io",
     description=API_DESCRIPTION,
-    version="1.0.0",
+    version="2024-11-19.0001",
     contact={
         "Github": "https://github.com/orcfax/ITN-Phase-1/",
     },
     openapi_tags=tags_metadata,
     lifespan=lifespan,
+    root_path="/api",
 )
 
 origins = [
@@ -126,7 +127,7 @@ def redirect_root_to_docs():
     """Redirect a user calling the API root '/' to the API
     documentation.
     """
-    return RedirectResponse(url="/docs")
+    return RedirectResponse(url="/api/docs")
 
 
 @app.get("/get_active_participants", tags=[TAG_STATISTICS])
@@ -177,9 +178,7 @@ async def get_date_range():
 
 
 @app.get("/itn_aliases_and_staking", tags=[TAG_INFO])
-async def get_itn_aliases_and_staking(
-    min_stake: int = 500000, license_no: str = None
-) -> dict:
+async def get_itn_aliases_and_staking(min_stake: int = 500000, license_no: str = None):
     """Return ITN aliases and stake values.
 
     Optionally: enter a license number, e.g. `#001` to see the details
@@ -266,8 +265,8 @@ def main():
         import_str,
         host="0.0.0.0",
         port=int(args.port),
-        access_log=False,
-        log_level="info",
+        access_log=True,
+        log_level="debug",
         reload=args.reload,
         workers=args.workers,
     )
