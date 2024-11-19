@@ -280,7 +280,7 @@ def generate_participant_count_csv(report: dict) -> str:
             f'{start}, {end}, "{humanize.intcomma(total_collected)}",'
             f'"{humanize.intcomma(total_data_points)}", '
             f' "{humanize.intcomma(average_per_feed)}", '
-            f"{",".join(participant_feeds)}"
+            f"{','.join(participant_feeds)}"
         )
         rows.append(row.strip())
     csv_header = (
