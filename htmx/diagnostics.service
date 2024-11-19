@@ -1,0 +1,21 @@
+# The ITN diagnostics service (part of systemd)
+# file: /etc/systemd/system/diagnostics.service
+
+[Unit]
+Description      = Diagnostics service
+Wants            = network-online.target
+After            = network-online.target
+
+[Service]
+User             = orcfax
+Type             = simple
+WorkingDirectory = /home/orcfax/itn-api/
+ExecStart        = /bin/bash -c '/home/orcfax/itn-api/htmx/start_diag.sh'
+KillSignal       = SIGINT
+TimeoutStopSec   = 300
+LimitNOFILE      = 32768
+Restart          = always
+RestartSec       = 5
+
+[Install]
+WantedBy         = multi-user.target

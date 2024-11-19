@@ -1,0 +1,21 @@
+# The Cardano Kupo service (part of systemd)
+# file: /etc/systemd/system/kupo.service
+
+[Unit]
+Description      = Cardano Kupo service
+Wants            = network-online.target
+After            = network-online.target
+
+[Service]
+User             = orcfax
+Type             = simple
+WorkingDirectory = /home/orcfax/kupo
+ExecStart        = /bin/bash -c '/home/orcfax/kupo/start_kupo.sh'
+KillSignal       = SIGINT
+TimeoutStopSec   = 5
+LimitNOFILE      = 32768
+Restart          = always
+RestartSec       = 5
+
+[Install]
+WantedBy         = multi-user.target
