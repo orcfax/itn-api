@@ -2,6 +2,7 @@
 
 import humanize
 
+
 def aliases_to_html(alias_report: dict) -> str:
     """Take the alias report and convert it to HTML.
 
@@ -46,13 +47,11 @@ def aliases_to_html(alias_report: dict) -> str:
     return f"{head}\n{rows}</table>\n"
 
 
-
 def participants_count_table(participants_count_total):
     """Return a table with active participant counts."""
 
     if not participants_count_total:
         return "zero collectors online"
-
 
     head = """
 <table>
@@ -74,4 +73,3 @@ def participants_count_table(participants_count_total):
         rows = f"{rows}{row}\n"
 
     return f"{head}\n{rows}</table>\n"
-

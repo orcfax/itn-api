@@ -1,10 +1,9 @@
 ---
 name: "linting - all"
 on:
-  pull_request:
-  push:
-    branches:
-      - "main"
+    pull_request:
+    push:
+        branches: [main]
 jobs:
   lint:
     name: "linting (python)"
