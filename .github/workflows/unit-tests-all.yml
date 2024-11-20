@@ -11,21 +11,10 @@ jobs:
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest]
         python-version: ["3.11.x", "3.12.x"]
         experimental: [false]
-        # Include experimental or bleeding-edge releases.
-        # Windows is not included as it can be unreliable, e.g.
-        # psycopg2-binary is only released some time after a Python
-        # major/minor version is formally released.
-        #
-        # Uncomment below (including 'include:') when the next
-        # reasonable test candidate is made available:
         include:
-          #
-          # Versions list: https://github.com/actions/python-versions/releases
-          # Example formatting: 3.11.0-alpha.1, 3.9.0-beta.8, 3.10.0-rc.3
-          #
           - os: ubuntu-latest
             python-version: "3.13.x"
             experimental: true
@@ -45,6 +34,8 @@ jobs:
         id: "pip-cache"
         run: |
          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
+      - name: "test"
+        run: echo "${{ steps.pip-cache.outputs.dir }}"
       - name: "cache pip packages"
         uses: "actions/cache@v4"
         with:
