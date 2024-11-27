@@ -81,3 +81,38 @@ def participants_count_table(participants_count_total):
         rows = f"{rows}{row}\n"
 
     return f"{head}\n{rows}</table>\n"
+
+
+def locations_table(locations):
+    """Create a table for participant locations."""
+
+    logging.info("formatting participants table")
+
+    if not locations:
+        return "no locations available"
+
+    head = """
+<table>
+    <tr>
+        <th>Region</th>
+        <th>Country</th>
+    </tr>
+    """.strip()
+
+    seen = []
+    rows = ""
+    for locale in locations:
+        region = locale["region"]
+        country = locale["country"]
+        if (region, country) in seen:
+            continue
+        row = f"""
+<tr>
+    <td>{region}</td>
+    <td nowrap>&nbsp;{country}&nbsp;</td>
+</tr>
+        """.strip()
+        seen.append((region, country))
+        rows = f"{rows}{row}\n"
+
+    return f"{head}\n{rows}</table>\n"

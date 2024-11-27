@@ -201,6 +201,17 @@ async def get_itn_aliases_and_staking_csv(
     return reports.get_all_license_holders_csv(app, min_stake, sort)
 
 
+@app.get("/geo", tags=[TAG_STATISTICS])
+async def get_locations():
+    """Return countries participating in the ITN."""
+    return await reports.get_locations(app)
+
+
+# HTMX #################################################################
+# HTMX #################################################################
+# HTMX #################################################################
+
+
 @app.get("/participants", tags=[TAG_HTMX], response_class=HTMLResponse)
 async def get_itn_participants() -> str:
     """Return ITN aliases and licenses."""
@@ -221,6 +232,13 @@ async def get_online_collectors() -> str:
     participants_count_total = dict(participants_count_total)
     htmx = htm_helpers.participants_count_table(participants_count_total)
     return htmx.strip()
+
+
+@app.get("/locations", tags=[TAG_HTMX], response_class=HTMLResponse)
+async def get_locations_hx():
+    """Return countries participating in the ITN."""
+    locations = await reports.get_locations(app)
+    return htm_helpers.locations_table(locations)
 
 
 def main():

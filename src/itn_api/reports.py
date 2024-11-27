@@ -2,11 +2,13 @@
 
 # pylint: disable=R0917,R0913,R0914
 
+import json
 import logging
 from collections import Counter
 from dataclasses import dataclass
 from typing import List, Tuple
 
+import apsw
 import humanize
 from fastapi import FastAPI
 
@@ -303,3 +305,32 @@ async def get_date_ranges(app: FastAPI):
         "earliest_date": dates[0],
         "latest_date": dates[1],
     }
+
+
+async def get_locations(app: FastAPI) -> list:
+    """Return locations from the database."""
+    try:
+        unique_raw_data = app.state.connection.execute(
+            "select min(node_id), raw_data from data_points group by node_id;"
+        )
+    except apsw.SQLError:
+        return "zero collectors online"
+    res = list(unique_raw_data)
+    countries = []
+    for item in res:
+        node = item[0]
+        message = json.loads(item[1])
+        try:
+            loc = message["message"]["identity"]["location"]
+            countries.append(
+                (
+                    {
+                        "geo": loc.get("loc"),
+                        "region": loc.get("region"),
+                        "country": loc.get("country"),
+                    }
+                )
+            )
+        except KeyError as err:
+            logger.error("node: '%s' not reporting location (%s)", node, err)
+    return countries
