@@ -38,7 +38,10 @@ def aliases_to_html(alias_report: dict) -> str:
     """.strip()
 
     rows = ""
+    count = 0
     for alias in alias_report:
+        if alias.alias != "":
+            count += 1
         row = f"""
 <tr>
     <td>{alias.staking}</td>
@@ -50,7 +53,21 @@ def aliases_to_html(alias_report: dict) -> str:
 
         rows = f"{rows}{row}\n"
 
-    return f"{head}\n{rows}</table>\n"
+    count_row = f"""
+<tr>
+    <td></td>
+    <td nowrap></td>
+    <td nowrap></td>
+    <td></td>
+</tr>
+<tr>
+    <td>Count</td>
+    <td nowrap>&nbsp;{count}&nbsp;</td>
+    <td nowrap></td>
+    <td></td>
+</tr>
+    """
+    return f"{head}\n{rows}\n{count_row}</table>\n"
 
 
 def participants_count_table(participants_count_total):

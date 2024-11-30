@@ -29,12 +29,11 @@
    <body
       hx-ext="pronom-api-params"
       hx-vals='{"baseURLLocal": "http://0.0.0.0:24001", "baseURL": "https://itn.0.orcfax.io"}'>
+      <div>
+      <h1>ITN diagnostics</h1>
       <section id="license-holders">
-         <h1>ITN diagnostics</h1>
          <div>
          <h2>License holders</h2>
-         <div>
-         <div>
          <div
             hx-get="{baseURL}/api/participants"
             hx-trigger="load"
@@ -43,6 +42,17 @@
          </div>
       </section>
       <hr>
+      <section id="node-counts">
+        <h2>Node counts</h2>
+        <div
+           hx-get="{baseURL}/api/count_active_participants"
+           hx-trigger="load"
+           hx-swap="innerHTML"
+           />
+        </div>
+     </section>
+     <hr>
+
       <section id="collector-counts">
          <h2>Active collector counts</h2>
          <div
@@ -66,5 +76,6 @@
       <div class="footer__bottom text--center">
          <div class="footer__copyright">ITN | Diagnostics</div>
       </div>
+    </div>
    </body>
 </html>

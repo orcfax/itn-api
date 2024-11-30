@@ -241,6 +241,19 @@ async def get_locations_hx():
     return htm_helpers.locations_table(locations)
 
 
+@app.get("/count_active_participants", tags=[TAG_HTMX], response_class=HTMLResponse)
+async def count_active_participants():
+    """Count active participants."""
+    try:
+        participants = app.state.connection.execute(
+            "select count(distinct address) as count from data_points;"
+        )
+    except apsw.SQLError as err:
+        return {"error": f"{err}"}
+    data = list(participants)
+    return f"{data[0][0]}"
+
+
 def main():
     """Primary entry point for this script."""
 
