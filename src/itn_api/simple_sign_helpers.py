@@ -63,12 +63,6 @@ def identify_aliases_callback(md: list[dict]) -> list[Alias]:
     """Return an alias from retrieved kupo metadata."""
     addresses = []
     for item in md:
-        assert (
-            "address" in item
-        ), "metadata dictionary should have been augmented with address"
-        assert (
-            "staking" in item
-        ), "metadata dictionary should have been augmented with staking"
         try:
             value = item["schema"]["674"]["map"][0]["v"]["list"]
         except KeyError:
