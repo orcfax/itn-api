@@ -47,7 +47,7 @@
          <h2>Active collector counts</h2>
          <div
             hx-get="{baseURL}/api/online_collectors"
-            hx-trigger="load"
+            hx-trigger="every 30s"
             hx-swap="innerHTML"
             />
          </div>
@@ -57,7 +57,7 @@
          <h2>Collector locations</h2>
          <div
             hx-get="{baseURL}/api/locations"
-            hx-trigger="every 30s"
+            hx-trigger="load"
             hx-swap="innerHTML"
             />
          </div>
