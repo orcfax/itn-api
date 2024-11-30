@@ -55,13 +55,7 @@ def aliases_to_html(alias_report: dict) -> str:
 
     count_row = f"""
 <tr>
-    <td></td>
-    <td nowrap></td>
-    <td nowrap></td>
-    <td></td>
-</tr>
-<tr>
-    <td>Count</td>
+    <td><b>Count</b></td>
     <td nowrap>&nbsp;{count}&nbsp;</td>
     <td nowrap></td>
     <td></td>
@@ -118,7 +112,8 @@ def locations_table(locations):
 
     seen = []
     rows = ""
-    for locale in locations:
+    idx = 0
+    for idx, locale in enumerate(locations):
         region = locale["region"]
         country = locale["country"]
         if (region, country) in seen:
@@ -131,5 +126,11 @@ def locations_table(locations):
         """.strip()
         seen.append((region, country))
         rows = f"{rows}{row}\n"
+    country_count = f"""
+<tr>
+    <td><b>Count</b></td>
+    <td nowrap>&nbsp;{idx}&nbsp;</td>
+</tr>
+        """.strip()
 
-    return f"{head}\n{rows}</table>\n"
+    return f"{head}\n{rows}\n{country_count}</table>\n"
