@@ -308,7 +308,13 @@ async def get_date_ranges(app: FastAPI):
 
 
 async def get_locations(app: FastAPI) -> list:
-    """Return locations from the database."""
+    """Return locations from the database.
+
+    Select one of each kind example:
+
+      * https://stackoverflow.com/a/571487
+
+    """
     try:
         unique_raw_data = app.state.connection.execute(
             "select min(node_id), raw_data from data_points group by node_id;"
