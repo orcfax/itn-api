@@ -64,7 +64,7 @@ def aliases_to_html(alias_report: dict) -> str:
     return f"{head}\n{rows}\n{count_row}</table>\n"
 
 
-def participants_count_table(participants_count_total):
+def participants_count_table(participants_count_total, participants_count_24hr):
     """Return a table with active participant counts."""
 
     logging.info("formatting participants table")
@@ -76,16 +76,19 @@ def participants_count_table(participants_count_total):
 <table>
     <tr>
         <th>Stake Key</th>
-        <th>Count</th>
+        <th>Count (Total)</th>
+        <th>Count (24hr)</th>
     </tr>
     """.strip()
 
     rows = ""
     for stake_key, count in participants_count_total.items():
+        count_24hr = participants_count_24hr.get(stake_key, 0)
         row = f"""
 <tr>
     <td>{stake_key}</td>
     <td nowrap>&nbsp;{humanize.intcomma(count)}&nbsp;</td>
+    <td nowrap>&nbsp;{humanize.intcomma(count_24hr)}&nbsp;</td>
 </tr>
         """.strip()
 
