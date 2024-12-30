@@ -224,13 +224,21 @@ async def get_itn_participants() -> str:
 async def get_online_collectors() -> str:
     """Return ITN aliases and collector counts."""
     try:
-        participants_count_total = app.state.connection.execute(
-            "select address, count(*) as count from data_points group by address order by count desc;"
+        participants_count = app.state.connection.execute(
+             "SELECT address, COUNT(*) AS total_count, SUM(CASE WHEN datetime(date_time) >= datetime('now', '-1 day') THEN 1 ELSE 0 END) AS count_24hr FROM data_points GROUP BY address ORDER BY total_count DESC;"
         )
     except apsw.SQLError:
         return "zero collectors online"
-    participants_count_total = dict(participants_count_total)
-    htmx = htm_helpers.participants_count_table(participants_count_total)
+
+    participants_count_total = {}
+    participants_count_24hr = {}
+
+    for row in participants_count:
+        address, total_count, count_24hr = row
+        participants_count_total[address] = total_count
+        participants_count_24hr[address] = count_24hr
+
+    htmx = htm_helpers.participants_count_table(participants_count_total, participants_count_24hr)
     return htmx.strip()
 
 
