@@ -19,6 +19,7 @@ import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Final
+import folium
 
 import apsw
 import uvicorn
@@ -224,13 +225,21 @@ async def get_itn_participants() -> str:
 async def get_online_collectors() -> str:
     """Return ITN aliases and collector counts."""
     try:
-        participants_count_total = app.state.connection.execute(
-            "select address, count(*) as count from data_points group by address order by count desc;"
+        participants_count = app.state.connection.execute(
+             "SELECT address, COUNT(*) AS total_count, SUM(CASE WHEN datetime(date_time) >= datetime('now', '-1 day') THEN 1 ELSE 0 END) AS count_24hr FROM data_points GROUP BY address ORDER BY total_count DESC;"
         )
     except apsw.SQLError:
         return "zero collectors online"
-    participants_count_total = dict(participants_count_total)
-    htmx = htm_helpers.participants_count_table(participants_count_total)
+
+    participants_count_total = {}
+    participants_count_24hr = {}
+
+    for row in participants_count:
+        address, total_count, count_24hr = row
+        participants_count_total[address] = total_count
+        participants_count_24hr[address] = count_24hr
+
+    htmx = htm_helpers.participants_count_table(participants_count_total, participants_count_24hr)
     return htmx.strip()
 
 
@@ -239,6 +248,12 @@ async def get_locations_hx():
     """Return countries participating in the ITN."""
     locations = await reports.get_locations(app)
     return htm_helpers.locations_table(locations)
+
+@app.get("/locations_map", tags=[TAG_HTMX], response_class=HTMLResponse)
+async def get_locations_map_hx():
+    """Return countries participating in the ITN."""
+    locations = await reports.get_locations(app)
+    return htm_helpers.locations_map(locations)
 
 
 @app.get("/count_active_participants", tags=[TAG_HTMX], response_class=HTMLResponse)

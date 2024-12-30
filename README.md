@@ -53,7 +53,7 @@ python -m tox -e linting
 ### pre-commit
 
 Pre-commit can be used to provide more feedback before committing code. This
-reduces reduces the number of commits you might want to make when working on
+reduces the number of commits you might want to make when working on
 code, it's also an alternative to running tox manually.
 
 To set up pre-commit, providing `pip install` has been run above:
