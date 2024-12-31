@@ -246,7 +246,7 @@ async def get_online_collectors() -> str:
 async def get_locations_hx():
     """Return countries participating in the ITN."""
     locations = await reports.get_locations(app)
-    return htm_helpers.locations_table(locations)
+    return htm_helpers.locations_map(locations)
 
 
 @app.get("/count_active_participants", tags=[TAG_HTMX], response_class=HTMLResponse)
