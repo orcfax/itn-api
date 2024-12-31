@@ -105,7 +105,7 @@ def locations_map(locations):
     if not locations:
         return "no locations available"
 
-    collectors_map = folium.Map(location=[0.0, 0.0], zoom_start=1, min_zoom=1, zoom_control=False)
+    collectors_map = folium.Map(location=[0.0, 0.0], zoom_start=1, min_zoom=1, zoom_control=False, attr=" ")
 
     seen = []
     idx = 0
