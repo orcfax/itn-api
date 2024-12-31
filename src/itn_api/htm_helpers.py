@@ -147,6 +147,3 @@ def locations_map(locations):
     )
 
     return collectors_map_html
-        """.strip()
-
-    return f"{head}\n{rows}\n{country_count}</table>\n"
