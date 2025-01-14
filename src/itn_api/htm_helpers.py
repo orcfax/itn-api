@@ -1,7 +1,7 @@
 """Helpers specifically for outputting HTML, i.e. for HTMX."""
 
 import logging
-
+import folium
 import humanize
 
 logger = logging.getLogger(__name__)
