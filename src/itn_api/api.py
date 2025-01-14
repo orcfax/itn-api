@@ -247,6 +247,12 @@ async def get_online_collectors() -> str:
 async def get_locations_hx():
     """Return countries participating in the ITN."""
     locations = await reports.get_locations(app)
+    return htm_helpers.locations_table(locations)
+
+@app.get("/locations_map", tags=[TAG_HTMX], response_class=HTMLResponse)
+async def get_locations_map_hx():
+    """Return countries participating in the ITN."""
+    locations = await reports.get_locations(app)
     return htm_helpers.locations_map(locations)
 
 
