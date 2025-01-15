@@ -317,31 +317,31 @@ async def get_locations(app: FastAPI) -> list:
     """
     try:
         unique_raw_data = app.state.connection.execute(
-            "select min(node_id), raw_data from data_points group by node_id;"
+            """select node_id, raw_data, min(address), date_time
+            from data_points
+            where datetime(date_time) >= datetime('now', '-48 hours')
+            group by address;
+            """
         )
     except apsw.SQLError:
         return "zero collectors online"
 
     res = list(unique_raw_data)
-    countries = []
+    key_loc = {}
     for item in res:
         node = item[0]
+        address = item[2]
+        if address in key_loc:
+            continue
         message = json.loads(item[1])
         try:
             loc = message["message"]["identity"]["location"]
-            geo = loc.get("loc")
-            latitude, longitude = map(float, geo.split(","))
-
-            countries.append(
-                (
-                    {
-                        "latitude": latitude,
-                        "longitude": longitude,
-                        "region": loc.get("region"),
-                        "country": loc.get("country"),
-                    }
-                )
-            )
+            country = {
+                "geo": loc.get("loc"),
+                "region": loc.get("region"),
+                "country": loc.get("country"),
+            }
+            key_loc[address] = country
         except KeyError as err:
             logger.error("node: '%s' not reporting location (%s)", node, err)
-    return countries
+    return key_loc

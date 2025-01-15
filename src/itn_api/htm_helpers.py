@@ -109,6 +109,7 @@ def locations_table(locations):
     head = """
 <table>
     <tr>
+        <th>Stake</th>
         <th>Region</th>
         <th>Country</th>
     </tr>
@@ -117,13 +118,13 @@ def locations_table(locations):
     seen = []
     rows = ""
     idx = 0
-    for idx, locale in enumerate(locations):
+    for addr, locale in locations.items():
+        idx += 1
         region = locale["region"]
         country = locale["country"]
-        if (region, country) in seen:
-            continue
         row = f"""
 <tr>
+    <td>{addr}</td>
     <td>{region}</td>
     <td nowrap>&nbsp;{country}&nbsp;</td>
 </tr>
