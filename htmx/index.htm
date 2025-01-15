@@ -28,14 +28,14 @@
    </head>
    <body
       hx-ext="pronom-api-params"
-      hx-vals='{"baseURLLocal": "http://0.0.0.0:24001", "baseURL": "https://itn.0.orcfax.io"}'>
+      hx-vals='{"baseURLLocal": "http://0.0.0.0:24001", "baseURL": "https://itn.0.orcfax.io/api"}'>
       <div>
       <h1>ITN diagnostics</h1>
       <section id="license-holders">
          <div>
          <h2>License holders</h2>
          <div
-            hx-get="{baseURL}/api/participants"
+            hx-get="{baseURL}/participants"
             hx-trigger="load"
             hx-swap="innerHTML"
             />
@@ -45,18 +45,17 @@
       <section id="node-counts">
         <h2>Node counts</h2>
         <div
-           hx-get="{baseURL}/api/count_active_participants"
+           hx-get="{baseURL}/count_active_participants"
            hx-trigger="load"
            hx-swap="innerHTML"
            />
         </div>
      </section>
      <hr>
-
       <section id="collector-counts">
          <h2>Active collector counts</h2>
          <div
-            hx-get="{baseURL}/api/online_collectors"
+            hx-get="{baseURL}/online_collectors"
             hx-trigger="every 30s"
             hx-swap="innerHTML"
             />
@@ -66,7 +65,17 @@
       <section id="locations">
          <h2>Collector locations</h2>
          <div
-            hx-get="{baseURL}/api/locations"
+            hx-get="{baseURL}/locations"
+            hx-trigger="load"
+            hx-swap="innerHTML"
+            />
+         </div>
+      </section>
+      <hr>
+      <section id="locations">
+         <center><h2>Collector map</h2></center>
+         <div
+            hx-get="{baseURL}/locations_map"
             hx-trigger="load"
             hx-swap="innerHTML"
             />
