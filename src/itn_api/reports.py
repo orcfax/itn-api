@@ -321,7 +321,7 @@ async def get_locations(app: FastAPI) -> list:
         )
     except apsw.SQLError:
         return "zero collectors online"
-    
+
     res = list(unique_raw_data)
     countries = []
     for item in res:
@@ -330,7 +330,7 @@ async def get_locations(app: FastAPI) -> list:
         try:
             loc = message["message"]["identity"]["location"]
             geo = loc.get("loc")
-            latitude, longitude = map(float, geo.split(','))
+            latitude, longitude = map(float, geo.split(","))
 
             countries.append(
                 (

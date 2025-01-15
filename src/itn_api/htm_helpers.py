@@ -1,6 +1,7 @@
 """Helpers specifically for outputting HTML, i.e. for HTMX."""
 
 import logging
+
 import folium
 import humanize
 
@@ -96,6 +97,7 @@ def participants_count_table(participants_count_total, participants_count_24hr):
 
     return f"{head}\n{rows}</table>\n"
 
+
 def locations_table(locations):
     """Create a table for participant locations."""
 
@@ -137,6 +139,7 @@ def locations_table(locations):
 
     return f"{head}\n{rows}\n{country_count}</table>\n"
 
+
 def locations_map(locations):
     """Create a map for participant locations."""
 
@@ -145,16 +148,17 @@ def locations_map(locations):
     if not locations:
         return "no locations available"
 
-    collectors_map = folium.Map(location=[0.0, 0.0], zoom_start=1, min_zoom=1, zoom_control=False, attr=" ")
+    collectors_map = folium.Map(
+        location=[0.0, 0.0], zoom_start=1, min_zoom=1, zoom_control=False, attr=" "
+    )
 
     seen = []
-    idx = 0
 
     collector_count = len(locations)
 
     collector_count_html = f"""
         <div style="position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
-                    background-color: rgba(255, 255, 255, 0.8); padding: 5px 10px; 
+                    background-color: rgba(255, 255, 255, 0.8); padding: 5px 10px;
                     border-radius: 5px; font-size: 16px; font-weight: bold; z-index: 9999;">
             Collector Count: {collector_count}
         </div>
@@ -162,7 +166,7 @@ def locations_map(locations):
 
     collectors_map.get_root().html.add_child(folium.Element(collector_count_html))
 
-    for idx, locale in enumerate(locations):
+    for locale in locations:
         region = locale["region"]
         country = locale["country"]
         latitude = locale["latitude"]
@@ -170,20 +174,20 @@ def locations_map(locations):
 
         if (region, country) in seen:
             continue
-        
+
         folium.Marker(
             location=[latitude, longitude],
             popup=f"{region}, {country}",
-            icon=folium.Icon(color='blue', prefix="fa", icon='computer')
+            icon=folium.Icon(color="blue", prefix="fa", icon="computer"),
         ).add_to(collectors_map)
 
         seen.append((region, country))
-    
-    collectors_map_html = collectors_map._repr_html_()
-    
+
+    collectors_map_html = collectors_map._repr_html_()  # pylint: disable=W0212
+
     collectors_map_html = collectors_map_html.replace(
         '<div style="width:100%;">',
-        '<div style="width:800px; height:600px; margin: 0 auto;">'
+        '<div style="width:800px; height:600px; margin: 0 auto;">',
     )
 
     return collectors_map_html
