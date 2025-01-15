@@ -225,7 +225,12 @@ async def get_online_collectors() -> str:
     """Return ITN aliases and collector counts."""
     try:
         participants_count = app.state.connection.execute(
-            "SELECT address, COUNT(*) AS total_count, SUM(CASE WHEN datetime(date_time) >= datetime('now', '-1 day') THEN 1 ELSE 0 END) AS count_24hr FROM data_points GROUP BY address ORDER BY total_count DESC;"
+            """SELECT address, COUNT(*) AS total_count,
+            SUM(CASE WHEN datetime(date_time) >= datetime('now', '-1 day')
+            THEN 1 ELSE 0 END) AS count_24hr
+            FROM data_points
+            GROUP BY address ORDER BY total_count DESC;
+            """
         )
     except apsw.SQLError:
         return "zero collectors online"
