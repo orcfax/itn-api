@@ -317,9 +317,50 @@ async def get_locations(app: FastAPI) -> list:
     """
     try:
         unique_raw_data = app.state.connection.execute(
+            "select min(node_id), raw_data from data_points group by node_id;"
+        )
+    except apsw.SQLError:
+        return "zero collectors online"
+
+    res = list(unique_raw_data)
+    countries = []
+    for item in res:
+        node = item[0]
+        message = json.loads(item[1])
+        try:
+            loc = message["message"]["identity"]["location"]
+            geo = loc.get("loc")
+            latitude, longitude = map(float, geo.split(","))
+
+            countries.append(
+                (
+                    {
+                        "latitude": latitude,
+                        "longitude": longitude,
+                        "region": loc.get("region"),
+                        "country": loc.get("country"),
+                    }
+                )
+            )
+        except KeyError as err:
+            logger.error("node: '%s' not reporting location (%s)", node, err)
+    return countries
+
+
+async def get_locations_stake_key(app: FastAPI) -> list:
+    """Return locations from the database with a users stake key. This
+    can eventually replace `get_locations()`.
+
+    Select one of each kind example:
+
+      * https://stackoverflow.com/a/571487
+
+    """
+    try:
+        unique_raw_data = app.state.connection.execute(
             """select node_id, raw_data, min(address), date_time
             from data_points
-            where datetime(date_time) >= datetime('now', '-48 hours')
+            where datetime(date_time) >= datetime('now', '-24 hours')
             group by address;
             """
         )

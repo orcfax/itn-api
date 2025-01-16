@@ -226,7 +226,7 @@ async def get_online_collectors() -> str:
     try:
         participants_count = app.state.connection.execute(
             """SELECT address, COUNT(*) AS total_count,
-            SUM(CASE WHEN datetime(date_time) >= datetime('now', '-1 day')
+            SUM(CASE WHEN datetime(date_time) >= datetime('now', '-24 hours')
             THEN 1 ELSE 0 END) AS count_24hr
             FROM data_points
             GROUP BY address ORDER BY total_count DESC;
@@ -235,16 +235,50 @@ async def get_online_collectors() -> str:
     except apsw.SQLError:
         return "zero collectors online"
 
+    try:
+        feed_count = app.state.connection.execute(
+            """SELECT distinct feed_id
+            from data_points
+            where datetime(date_time) >= datetime('now', '-48 hours');
+            """
+        )
+    except apsw.SQLError:
+        return "zero collectors online"
+
+    no_feeds = len(list(feed_count))
+
+    # FIXME: These can all be combined better, e.g. into a dataclass or
+    # somesuch. This is purely for expediency to have something up and
+    # running.
     participants_count_total = {}
     participants_count_24hr = {}
+    participant_count_24h_feed_average = {}
+    participant_count_1h_feed_average = {}
+    participant_count_1m_feed_average = {}
 
     for row in participants_count:
         address, total_count, count_24hr = row
         participants_count_total[address] = total_count
         participants_count_24hr[address] = count_24hr
+        try:
+            participant_count_24h_feed_average[address] = int(count_24hr / no_feeds) + 1
+            participant_count_1h_feed_average[address] = (
+                int(count_24hr / no_feeds / 24) + 1
+            )
+            participant_count_1m_feed_average[address] = round(
+                count_24hr / no_feeds / 24 / 60, 4
+            )
+        except ZeroDivisionError:
+            participant_count_24h_feed_average[address] = 0
+            participant_count_1h_feed_average[address] = 0
+            participant_count_1m_feed_average = 0
 
     htmx = htm_helpers.participants_count_table(
-        participants_count_total, participants_count_24hr
+        participants_count_total,
+        participants_count_24hr,
+        participant_count_24h_feed_average,
+        participant_count_1h_feed_average,
+        participant_count_1m_feed_average,
     )
     return htmx.strip()
 
@@ -252,7 +286,7 @@ async def get_online_collectors() -> str:
 @app.get("/locations", tags=[TAG_HTMX], response_class=HTMLResponse)
 async def get_locations_hx():
     """Return countries participating in the ITN."""
-    locations = await reports.get_locations(app)
+    locations = await reports.get_locations_stake_key(app)
     return htm_helpers.locations_table(locations)
 
 

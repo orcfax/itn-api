@@ -65,7 +65,13 @@ def aliases_to_html(alias_report: dict) -> str:
     return f"{head}\n{rows}\n{count_row}</table>\n"
 
 
-def participants_count_table(participants_count_total, participants_count_24hr):
+def participants_count_table(
+    participants_count_total,
+    participants_count_24hr,
+    participant_count_24h_feed_average,
+    participant_count_1h_feed_average,
+    participant_count_1m_feed_average,
+):
     """Return a table with active participant counts."""
 
     logging.info("formatting participants table")
@@ -79,17 +85,26 @@ def participants_count_table(participants_count_total, participants_count_24hr):
         <th>Stake Key</th>
         <th>Count (Total)</th>
         <th>Count (24hr)</th>
+        <th>Per feed (24hr)</th>
+        <th>Per feed (1hr)</th>
+        <th>Per feed (1min)</th>
     </tr>
     """.strip()
 
     rows = ""
     for stake_key, count in participants_count_total.items():
         count_24hr = participants_count_24hr.get(stake_key, 0)
+        average_24hr = participant_count_24h_feed_average.get(stake_key, 0)
+        average_1hr = participant_count_1h_feed_average.get(stake_key, 0)
+        average_min = participant_count_1m_feed_average.get(stake_key, 0)
         row = f"""
 <tr>
     <td>{stake_key}</td>
     <td nowrap>&nbsp;{humanize.intcomma(count)}&nbsp;</td>
     <td nowrap>&nbsp;{humanize.intcomma(count_24hr)}&nbsp;</td>
+    <td nowrap>&nbsp;{humanize.intcomma(average_24hr)}&nbsp;</td>
+    <td nowrap>&nbsp;{humanize.intcomma(average_1hr)}&nbsp;</td>
+    <td nowrap>&nbsp;{humanize.intcomma(average_min)}&nbsp;</td>
 </tr>
         """.strip()
 
