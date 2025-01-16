@@ -62,20 +62,20 @@
          </div>
       </section>
       <hr>
+      <section id="locations map">
+        <center><h2>Collector map</h2></center>
+        <div
+           hx-get="{baseURL}/locations_map"
+           hx-trigger="load"
+           hx-swap="innerHTML"
+           />
+        </div>
+     </section>
+     <hr>
       <section id="locations">
          <h2>Collector locations</h2>
          <div
             hx-get="{baseURL}/locations"
-            hx-trigger="load"
-            hx-swap="innerHTML"
-            />
-         </div>
-      </section>
-      <hr>
-      <section id="locations">
-         <center><h2>Collector map</h2></center>
-         <div
-            hx-get="{baseURL}/locations_map"
             hx-trigger="load"
             hx-swap="innerHTML"
             />
