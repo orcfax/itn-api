@@ -85,9 +85,9 @@ def participants_count_table(
         <th>Stake Key</th>
         <th>Count (Total)</th>
         <th>Count (24hr)</th>
-        <th>Per feed (24hr)</th>
-        <th>Per feed (1hr)</th>
-        <th>Per feed (1min)</th>
+        <th>Per feed (24hr) (max 1440)</th>
+        <th>Per feed (1hr) (max 60)</th>
+        <th>Per feed (1min) (max 1)</th>
     </tr>
     """.strip()
 
