@@ -92,7 +92,7 @@ async def lifespan(app: FastAPI):
     db_path = Path(os.environ["DATABASE_PATH"])
     logger.info("validator database: %s", db_path)
     app.state.connection = apsw.Connection(
-        str(db_path), flags=apsw.SQLITE_OPEN_NOMUTEX | apsw.SQLITE_OPEN_READONLY
+        str(db_path), flags=apsw.SQLITE_OPEN_READONLY
     )
     _enable_best_practice(app.state.connection)
     app.state.kupo_url = os.environ["KUPO_URL"]
