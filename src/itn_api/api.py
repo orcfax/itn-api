@@ -79,14 +79,21 @@ tags_metadata = [
 ]
 
 
+def _enable_best_practice(connection: apsw.Connection):
+    """Enable aspw best practice."""
+    apsw.bestpractice.connection_wal(connection)
+    apsw.bestpractice.library_logging()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Load the database connection for the life of the app.s"""
     db_path = Path(os.environ["DATABASE_PATH"])
     logger.info("validator database: %s", db_path)
     app.state.connection = apsw.Connection(
-        str(db_path), flags=apsw.SQLITE_OPEN_READONLY
+        str(db_path), flags=apsw.SQLITE_OPEN_NOMUTEX | apsw.SQLITE_OPEN_READONLY
     )
+    _enable_best_practice(app.state.connection)
     app.state.kupo_url = os.environ["KUPO_URL"]
     app.state.kupo_port = os.environ["KUPO_PORT"]
     yield
