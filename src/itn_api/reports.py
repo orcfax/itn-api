@@ -8,8 +8,8 @@ from collections import Counter
 from dataclasses import dataclass
 from typing import List, Tuple
 
-import apsw
 import humanize
+import mariadb
 from fastapi import FastAPI
 
 try:
@@ -85,7 +85,7 @@ def get_all_license_holders_csv(app: FastAPI, min_stake: int, sort: str) -> str:
         )
     csv = "idx,staking,license,value\n"
     for idx, data in enumerate(alias_addr_data, 1):
-        stake = humanize.intcomma(data.staked).replace(",", ".")
+        stake = humanize.intcomma(data.staked).replace(",", "")
         csv = f"{csv}{idx:0>4}, {data.staking}, {' '.join(data.licenses)}, {stake}\n"
     return csv
 
@@ -158,7 +158,7 @@ def _get_addr_minute_feed_dicts(data: list, addresses: list):
         for item in data:
             if item[0] != addr:
                 continue
-            minutes = item[1].rsplit(":", 1)[0].strip()
+            minutes = str(item[1]).rsplit(":", 1)[0].strip()
             feed = item[2].strip()
             addr_minute_values = helpers.update_dict(
                 addr_minute_values, addr, f"{feed}|{minutes}"
@@ -243,7 +243,8 @@ def _get_participant_data_by_date_range(
     app: FastAPI, date_start: str, date_end: str
 ) -> list:
     """Query the database and get the results."""
-    participants = app.state.connection.execute(
+    cursor = app.state.connection.cursor()
+    cursor.execute(
         f"""
             select address, date_time, feed_id
             from data_points
@@ -252,7 +253,9 @@ def _get_participant_data_by_date_range(
             order by address;
         """
     )
-    return list(participants)
+    res = list(cursor)
+    cursor.close()
+    return res
 
 
 def generate_participant_count_csv(report: dict) -> str:
@@ -269,7 +272,7 @@ def generate_participant_count_csv(report: dict) -> str:
     for stake_addr, value in data.items():
         participant = stake_addr
         license_no = value.get("license", "").replace("Validator License", "").strip()
-        stake = humanize.intcomma(int(value.get("stake", 0))).replace(",", ".")
+        stake = humanize.intcomma(int(value.get("stake", 0))).replace(",", "")
         total_data_points = value.get("total_data_points", 0)
         average_per_feed = value.get("average_mins_collecting_per_feed", 0)
         total_collected = value.get("number_of_feeds_collected", 0)
@@ -297,10 +300,10 @@ def generate_participant_count_csv(report: dict) -> str:
 
 async def get_date_ranges(app: FastAPI):
     """Return min and max dates from the database."""
-    min_max_dates = app.state.connection.execute(
-        "select min(date_time), max(date_time) from data_points;"
-    )
-    dates = list(min_max_dates)[0]
+    cursor = app.state.connection.cursor()
+    cursor.execute("select min(date_time), max(date_time) from data_points;")
+    dates = list(cursor)[0]
+    cursor.close()
     return {
         "earliest_date": dates[0],
         "latest_date": dates[1],
@@ -315,14 +318,16 @@ async def get_locations(app: FastAPI) -> list:
       * https://stackoverflow.com/a/571487
 
     """
+    cursor = app.state.connection.cursor()
     try:
-        unique_raw_data = app.state.connection.execute(
+        cursor.execute(
             "select min(node_id), raw_data from data_points group by node_id;"
         )
-    except apsw.SQLError:
+    except mariadb.Error:
         return "zero collectors online"
 
-    res = list(unique_raw_data)
+    res = list(cursor)
+    cursor.close()
     countries = []
     for item in res:
         node = item[0]
@@ -356,18 +361,20 @@ async def get_locations_stake_key(app: FastAPI) -> list:
       * https://stackoverflow.com/a/571487
 
     """
+    cursor = app.state.connection.cursor()
     try:
-        unique_raw_data = app.state.connection.execute(
+        cursor.execute(
             """select node_id, raw_data, min(address), date_time
             from data_points
-            where datetime(date_time) >= datetime('now', '-24 hours')
+            where date_time >= (SELECT DATE_SUB(NOW(), INTERVAL 1 DAY))
             group by address;
             """
         )
-    except apsw.SQLError:
+    except mariadb.Error:
         return "zero collectors online"
 
-    res = list(unique_raw_data)
+    res = list(cursor)
+    cursor.close()
     key_loc = {}
     for item in res:
         node = item[0]

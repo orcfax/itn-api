@@ -137,3 +137,7 @@ dmypy.json
 *.db
 *.zip
 *.bk
+*.db-wal
+*.db-shm
+*.csv
+*.htm

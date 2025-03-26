@@ -17,11 +17,9 @@ import logging
 import os
 import time
 from contextlib import asynccontextmanager
-from pathlib import Path
 from typing import Final
 
-import apsw
-import apsw.bestpractice
+import mariadb
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -80,21 +78,23 @@ tags_metadata = [
 ]
 
 
-def _enable_best_practice(connection: apsw.Connection):
-    """Enable aspw best practice."""
-    apsw.bestpractice.connection_wal(connection)
-    apsw.bestpractice.library_logging()
+def _get_database_connection() -> mariadb.Connection:
+    """Get a MriaDB database connection."""
+    connection = mariadb.connect(
+        user=os.environ["DB_USER"],
+        password=os.environ["DB_PASS"],
+        host="127.0.0.1",
+        port=3306,
+        database=os.environ["DB_DATABASE"],
+        autocommit=True,
+    )
+    return connection
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Load the database connection for the life of the app.s"""
-    db_path = Path(os.environ["DATABASE_PATH"])
-    logger.info("validator database: %s", db_path)
-    app.state.connection = apsw.Connection(
-        str(db_path), flags=apsw.SQLITE_OPEN_READONLY
-    )
-    _enable_best_practice(app.state.connection)
+    app.state.connection = _get_database_connection()
     app.state.kupo_url = os.environ["KUPO_URL"]
     app.state.kupo_port = os.environ["KUPO_PORT"]
     yield
@@ -141,26 +141,29 @@ def redirect_root_to_docs():
 @app.get("/get_active_participants", tags=[TAG_STATISTICS])
 async def get_active_participants():
     """Return participants in the ITN database."""
+    cursor = app.state.connection.cursor()
     try:
-        participants = app.state.connection.execute(
-            "select distinct address from data_points;"
-        )
-    except apsw.SQLError as err:
+        cursor.execute("select distinct address from data_points;")
+    except mariadb.Error as err:
         return {"error": f"{err}"}
-    data = [participant[0] for participant in participants]
+    data = [participant[0] for participant in cursor]
+    cursor.close()
     return data
 
 
 @app.get("/get_participants_counts_total", tags=[TAG_STATISTICS])
 async def get_participants_counts_total():
     """Return participants total counts."""
+    cursor = app.state.connection.cursor()
     try:
-        participants_count_total = app.state.connection.execute(
+        cursor.execute(
             "select count(*) as count, address from data_points group by address order by count desc;"
         )
-    except apsw.SQLError as err:
+    except mariadb.Error as err:
         return {"error": f"{err}"}
-    return participants_count_total
+    res = list(cursor)
+    cursor.close()
+    return res
 
 
 @app.get("/get_participants_counts_day", tags=[TAG_STATISTICS])
@@ -168,7 +171,6 @@ async def get_participants_counts_day(
     date_start: str = "1970-01-01", date_end: str = "1970-01-03"
 ):
     """Return participants in ITN."""
-
     report = reports.get_participants_counts_date_range(app, date_start, date_end)
     return report
 
@@ -231,27 +233,32 @@ async def get_itn_participants() -> str:
 @app.get("/online_collectors", tags=[TAG_HTMX], response_class=HTMLResponse)
 async def get_online_collectors() -> str:
     """Return ITN aliases and collector counts."""
+    cursor = app.state.connection.cursor()
     try:
-        participants_count = app.state.connection.execute(
+        cursor.execute(
             """SELECT address, COUNT(*) AS total_count,
-            SUM(CASE WHEN datetime(date_time) >= datetime('now', '-24 hours')
+            SUM(CASE WHEN date_time >= (SELECT DATE_SUB(NOW(), INTERVAL 1 DAY))
             THEN 1 ELSE 0 END) AS count_24hr
             FROM data_points
             GROUP BY address ORDER BY total_count DESC;
             """
         )
-    except apsw.SQLError:
+    except mariadb.Error:
         return "zero collectors online"
 
+    participants_count = list(cursor)
+
     try:
-        feed_count = app.state.connection.execute(
+        cursor.execute(
             """SELECT distinct feed_id
             from data_points
-            where datetime(date_time) >= datetime('now', '-48 hours');
+            where date_time >= (SELECT DATE_SUB(NOW(), INTERVAL 1 DAY));
             """
         )
-    except apsw.SQLError:
+    except mariadb.Error:
         return "zero collectors online"
+
+    feed_count = list(cursor)
 
     no_feeds = len(list(feed_count))
 
@@ -308,13 +315,13 @@ async def get_locations_map_hx():
 @app.get("/count_active_participants", tags=[TAG_HTMX], response_class=HTMLResponse)
 async def count_active_participants():
     """Count active participants."""
+    cursor = app.state.connection.cursor()
     try:
-        participants = app.state.connection.execute(
-            "select count(distinct address) as count from data_points;"
-        )
-    except apsw.SQLError as err:
+        cursor.execute("select count(distinct address) as count from data_points;")
+    except mariadb.Error as err:
         return {"error": f"{err}"}
-    data = list(participants)
+    data = list(cursor)
+    cursor.close()
     return f"{data[0][0]}"
 
 
