@@ -182,7 +182,9 @@ async def get_participants_counts_day_csv(
     date_start: str = "1970-01-01", date_end: str = "1970-01-03"
 ) -> str:
     """Return participants in ITN."""
+    logger.info("generating participant csv: get db data")
     report = reports.get_participants_counts_date_range(app, date_start, date_end)
+    logger.info("data retrieved for participant csv: creating count csv")
     csv_report = reports.generate_participant_count_csv(report)
     return csv_report
 

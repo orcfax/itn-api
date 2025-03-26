@@ -232,7 +232,9 @@ def get_participants_counts_date_range(
     logger.info("no addresses: '%s'", len(feeds))
     addr_minute_values, addr_feed_values = _get_addr_minute_feed_dicts(data, addresses)
     addr_minute_values = helpers.dedupe_dicts(addr_minute_values)
+    logger.info("retrieving data from kupo")
     address_data = _get_basic_addr_data(app.state.kupo_url, app.state.kupo_port)
+    logger.info("processing json report")
     report = _process_json_report(
         address_data, date_start, date_end, addr_minute_values, addr_feed_values, feeds
     )
@@ -248,8 +250,8 @@ def _get_participant_data_by_date_range(
         f"""
             select address, date_time, feed_id
             from data_points
-            where date_time > date('{date_start}')
-            and date_time < date('{date_end}')
+            where date_time > '{date_start}'
+            and date_time < '{date_end}'
             order by address;
         """
     )
@@ -271,7 +273,17 @@ def generate_participant_count_csv(report: dict) -> str:
     rows = []
     for stake_addr, value in data.items():
         participant = stake_addr
-        license_no = value.get("license", "").replace("Validator License", "").strip()
+        try:
+            license_no = (
+                value.get("license", "").replace("Validator License", "").strip()
+            )
+        except AttributeError:
+            logger.error(
+                "cannot retrieve license no from: value '%s' stake: '%s'",
+                value,
+                stake_addr,
+            )
+            continue
         stake = humanize.intcomma(int(value.get("stake", 0))).replace(",", "")
         total_data_points = value.get("total_data_points", 0)
         average_per_feed = value.get("average_mins_collecting_per_feed", 0)
@@ -321,7 +333,11 @@ async def get_locations(app: FastAPI) -> list:
     cursor = app.state.connection.cursor()
     try:
         cursor.execute(
-            "select min(node_id), raw_data from data_points group by node_id;"
+            """select min(node_id), raw_data
+            from data_points
+            where date_time >= (SELECT date_sub(Now(), interval 60 minute))
+            group by node_id;
+            """
         )
     except mariadb.Error:
         return "zero collectors online"
@@ -366,7 +382,7 @@ async def get_locations_stake_key(app: FastAPI) -> list:
         cursor.execute(
             """select node_id, raw_data, min(address), date_time
             from data_points
-            where date_time >= (SELECT DATE_SUB(NOW(), INTERVAL 1 DAY))
+            where date_time >= (SELECT DATE_SUB(NOW(), INTERVAL 60 minute))
             group by address;
             """
         )
