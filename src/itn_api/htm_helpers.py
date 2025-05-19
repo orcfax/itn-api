@@ -133,6 +133,8 @@ def locations_table(locations):
     seen = []
     rows = ""
     idx = 0
+    if not locations:
+        return "problem gathering collectors, please try again shortly"
     for addr, locale in locations.items():
         idx += 1
         region = locale["region"]
@@ -152,7 +154,6 @@ def locations_table(locations):
     <td nowrap>&nbsp;{idx}&nbsp;</td>
 </tr>
         """.strip()
-
     return f"{head}\n{rows}\n{country_count}</table>\n"
 
 

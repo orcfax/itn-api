@@ -158,6 +158,9 @@ def _get_addr_minute_feed_dicts(data: list, addresses: list):
         for item in data:
             if item[0] != addr:
                 continue
+            # SPLIT MINUTES OUT HERE FOR EVENTUAL DEDUPE...
+            # SPLIT MINUTES OUT HERE FOR EVENTUAL DEDUPE...
+            # SPLIT MINUTES OUT HERE FOR EVENTUAL DEDUPE...
             minutes = str(item[1]).rsplit(":", 1)[0].strip()
             feed = item[2].strip()
             addr_minute_values = helpers.update_dict(
@@ -195,9 +198,11 @@ def _process_json_report(
     days_in_range = minutes_in_range / helpers.MINUTES_DAY
     counts = {}
     for addr, value in addr_minute_values.items():
-        total_mins = len(set(value))
+        total_mins = len(value)
         average_mins = total_mins / len(set(feeds))
         license_name, stake = _get_license_and_stake(address_data, addr)
+        feeds_sorted = addr_feed_values[addr]
+        feeds_sorted.sort()
         counts[addr] = {
             "license": license_name,
             "stake": stake,
@@ -206,8 +211,7 @@ def _process_json_report(
             "total_mins_in_date_range": minutes_in_range,
             "number_of_feeds_collected": len(set(addr_feed_values[addr])),
             "feeds_count": [
-                f"{key}: {value}"
-                for key, value in Counter(addr_feed_values[addr]).items()
+                f"{key}: {value}" for key, value in Counter(feeds_sorted).items()
             ],
         }
     report = {}
@@ -222,19 +226,29 @@ def _process_json_report(
 
 
 @helpers.timeit
-def get_participants_counts_date_range(
+async def get_participants_counts_date_range(
     app: FastAPI, date_start: str, date_end: str
 ) -> dict:
     """Return participants report by date range."""
+
     data = _get_participant_data_by_date_range(app, date_start, date_end)
     feeds, addresses = _get_unique_feeds(data)
     logger.info("no feeds: '%s'", len(feeds))
     logger.info("no addresses: '%s'", len(feeds))
     addr_minute_values, addr_feed_values = _get_addr_minute_feed_dicts(data, addresses)
-    addr_minute_values = helpers.dedupe_dicts(addr_minute_values)
+
+    # Remove dedupe for now, and look at all minute values we receive
+    # to perform a full count.
+    #
+    # `addr_minute_values`` is a dict ordered by stake key, with a list
+    # of feed+minutes for the era of participation as the value.
+    #
+    # addr_minute_values = helpers.dedupe_dicts(addr_minute_values)
+
     logger.info("retrieving data from kupo")
     address_data = _get_basic_addr_data(app.state.kupo_url, app.state.kupo_port)
     logger.info("processing json report")
+
     report = _process_json_report(
         address_data, date_start, date_end, addr_minute_values, addr_feed_values, feeds
     )
@@ -260,7 +274,7 @@ def _get_participant_data_by_date_range(
     return res
 
 
-def generate_participant_count_csv(report: dict) -> str:
+async def generate_participant_count_csv(report: dict) -> str:
     """Convert JSON data into a CSV for ease of use."""
 
     max_possible = report.get("max_possible_data_points")
@@ -283,8 +297,11 @@ def generate_participant_count_csv(report: dict) -> str:
                 value,
                 stake_addr,
             )
-            continue
-        stake = humanize.intcomma(int(value.get("stake", 0))).replace(",", "")
+            license_no = "deregistered"
+        try:
+            stake = humanize.intcomma(int(value.get("stake", 0))).replace(",", "")
+        except TypeError:
+            stake = 0
         total_data_points = value.get("total_data_points", 0)
         average_per_feed = value.get("average_mins_collecting_per_feed", 0)
         total_collected = value.get("number_of_feeds_collected", 0)
@@ -387,7 +404,7 @@ async def get_locations_stake_key(app: FastAPI) -> list:
             """
         )
     except mariadb.Error:
-        return "zero collectors online"
+        return {}
 
     res = list(cursor)
     cursor.close()

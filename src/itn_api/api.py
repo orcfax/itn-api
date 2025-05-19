@@ -12,6 +12,7 @@ variable.
 # pylint: disable=W0621
 
 import argparse
+import decimal
 import importlib
 import logging
 import os
@@ -83,8 +84,8 @@ def _get_database_connection() -> mariadb.Connection:
     connection = mariadb.connect(
         user=os.environ["DB_USER"],
         password=os.environ["DB_PASS"],
-        host="127.0.0.1",
-        port=3306,
+        host=os.environ.get("DB_URL", "0.0.0.0"),
+        port=int(os.environ.get("DB_PORT", 3306)),
         database=os.environ["DB_DATABASE"],
         autocommit=True,
     )
@@ -185,7 +186,7 @@ async def get_participants_counts_day_csv(
     logger.info("generating participant csv: get db data")
     report = await reports.get_participants_counts_date_range(app, date_start, date_end)
     logger.info("data retrieved for participant csv: creating count csv")
-    csv_report = reports.generate_participant_count_csv(report)
+    csv_report = await reports.generate_participant_count_csv(report)
     return csv_report
 
 
@@ -289,6 +290,10 @@ async def get_online_collectors() -> str:
             participant_count_24h_feed_average[address] = 0
             participant_count_1h_feed_average[address] = 0
             participant_count_1m_feed_average = 0
+        except decimal.InvalidOperation:
+            participant_count_24h_feed_average[address] = 0
+            participant_count_1h_feed_average[address] = 0
+            participant_count_1m_feed_average[address] = 0
 
     htmx = htm_helpers.participants_count_table(
         participants_count_total,
