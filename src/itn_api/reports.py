@@ -6,6 +6,7 @@ import json
 import logging
 from collections import Counter
 from dataclasses import dataclass
+from itertools import combinations
 from typing import List, Tuple
 
 import humanize
@@ -403,10 +404,12 @@ async def get_locations_stake_key(app: FastAPI) -> list:
             group by address;
             """
         )
-    except mariadb.Error:
+    except mariadb.Error as err:
+        logger.error("mariadb error getting location data: %s", err)
         return {}
 
     res = list(cursor)
+
     cursor.close()
     key_loc = {}
     for item in res:
@@ -425,4 +428,124 @@ async def get_locations_stake_key(app: FastAPI) -> list:
             key_loc[address] = country
         except KeyError as err:
             logger.error("node: '%s' not reporting location (%s)", node, err)
+            return {}
     return key_loc
+
+
+async def _analyze_price_stats(feeds: list, hour_data: list, day_data: list):
+    """Output an analysis of our price statistics.
+
+    NB. this function is looking a little unweildy. How can we refactor it
+    or take advantage of another approach?
+    """
+    out = {}
+    for feed in feeds:
+        hourly_min = []
+        hourly_max = []
+        hourly_vals_min = []
+        hourly_vals_max = []
+        for item in hour_data:
+            if item[1] == feed[0]:
+                hourly_min.append((item[2], item[0]))
+                hourly_max.append((item[3], item[0]))
+                hourly_vals_min.append(item[2])
+                hourly_vals_max.append(item[3])
+        daily_min = []
+        daily_max = []
+        daily_vals_min = []
+        daily_vals_max = []
+        for item in day_data:
+            if item[1] == feed[0]:
+                daily_min.append((item[2], item[0]))
+                daily_max.append((item[3], item[0]))
+                daily_vals_min.append(item[2])
+                daily_vals_max.append(item[3])
+
+        hourly_min = sorted(hourly_min, key=lambda t: (t[0], -t[0]), reverse=False)
+        daily_min = sorted(daily_min, key=lambda t: (t[0], -t[0]), reverse=False)
+        hourly_max = sorted(hourly_max, key=lambda t: (t[0], -t[0]), reverse=True)
+        daily_max = sorted(daily_max, key=lambda t: (t[0], -t[0]), reverse=True)
+
+        hourly_min_compare = [
+            (a, b, (100 - a / b * 100) > 1) for a, b in combinations(hourly_vals_min, 2)
+        ]
+        hourly_max_compare = [
+            (a, b, (100 - a / b * 100) > 1) for a, b in combinations(hourly_vals_max, 2)
+        ]
+        daily_min_compare = [
+            (a, b, (100 - a / b * 100) > 1) for a, b in combinations(daily_vals_min, 2)
+        ]
+        daily_max_compare = [
+            (a, b, (100 - a / b * 100) > 1) for a, b in combinations(daily_vals_max, 2)
+        ]
+
+        min_hourly_threshold = False
+        max_hourly_threshold = False
+        min_daily_threshold = False
+        max_daily_threshold = False
+        for item in hourly_min_compare:
+            if item[2] is False:
+                continue
+            min_hourly_threshold = item
+        for item in hourly_max_compare:
+            if item[2] is False:
+                continue
+            max_hourly_threshold = item
+        for item in daily_min_compare:
+            if item[2] is False:
+                continue
+            min_daily_threshold = item
+        for item in daily_max_compare:
+            if item[2] is False:
+                continue
+            max_daily_threshold = item
+
+        min_max_hourly_min = (min(hourly_vals_min), max(hourly_vals_min))
+        min_hourly_percentage_diff = 100 - (
+            (min(hourly_vals_min) / max(hourly_vals_min)) * 100
+        )
+        min_max_hourly_max = (min(hourly_vals_max), max(hourly_vals_max))
+        max_hourly_percentage_diff = (
+            100 - min(hourly_vals_max) / max(hourly_vals_max) * 100
+        )
+        min_max_daily_min = (min(daily_vals_min), max(daily_vals_min))
+        min_daily_percentage_diff = 100 - (
+            (min(daily_vals_min) / max(daily_vals_min)) * 100
+        )
+        min_max_daily_max = (min(daily_vals_min), max(daily_vals_max))
+        max_daily_percentage_diff = 100 - (
+            (min(daily_vals_max) / max(daily_vals_max)) * 100
+        )
+
+        out[feed[0]] = {
+            "breached_hourly_min": min_hourly_threshold,
+            "breached_hourly_max": max_hourly_threshold,
+            "breached_daily_min": min_daily_threshold,
+            "breached_daily_max": max_daily_threshold,
+            "hourly_min": {
+                "min": min_max_hourly_min[0],
+                "max": min_max_hourly_min[1],
+            },
+            "min_max_hourly_max": {
+                "min": min_max_hourly_max[0],
+                "max": min_max_hourly_max[1],
+            },
+            "min_max_daily_min": {
+                "min": min_max_daily_min[0],
+                "max": min_max_daily_min[1],
+            },
+            "min_max_daily_max": {
+                "min": min_max_daily_max[0],
+                "max": min_max_daily_max[1],
+            },
+            "min_min_hourly_diff": min_hourly_percentage_diff,
+            "max_max_hourly_diff": max_hourly_percentage_diff,
+            "min_min_daily_diff": min_daily_percentage_diff,
+            "max_max_daily_diff": max_daily_percentage_diff,
+            "min_price_day": daily_min,
+            "min_price_hour": hourly_min,
+            "max_price_day": daily_max,
+            "max_price_hour": hourly_max,
+        }
+
+    return out

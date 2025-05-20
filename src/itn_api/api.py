@@ -220,6 +220,50 @@ async def get_locations():
     return await reports.get_locations(app)
 
 
+@app.get("/validator_price_stats", tags=[TAG_STATISTICS])
+async def validator_price_stats() -> dict:
+    """Count active participants."""
+    cursor = app.state.connection.cursor()
+
+    try:
+        cursor.execute(
+            """SELECT distinct feed_id
+            from data_points
+            where date_time >= (SELECT DATE_SUB(NOW(), INTERVAL 1 DAY));
+            """
+        )
+    except mariadb.Error:
+        return "zero collectors online"
+    feeds = list(cursor)
+    try:
+        cursor.execute(
+            """select address, feed_id, min(source_price), max(source_price)
+            from data_points
+            where date_time < date_sub(Now(), interval 1 hour)
+            group by address, feed_id;
+            """
+        )
+    except mariadb.Error as err:
+        return {"error": f"{err}"}
+    hour_data = list(cursor)
+    try:
+        cursor.execute(
+            """select address, feed_id, min(source_price), max(source_price)
+            from data_points
+            where date_time < date_sub(Now(), interval 1 day)
+            group by address, feed_id;
+            """
+        )
+    except mariadb.Error as err:
+        return {"error": f"{err}"}
+    day_data = list(cursor)
+
+    out = await reports._analyze_price_stats(feeds, hour_data, day_data)
+
+    cursor.close()
+    return out
+
+
 # HTMX #################################################################
 # HTMX #################################################################
 # HTMX #################################################################
@@ -229,7 +273,7 @@ async def get_locations():
 async def get_itn_participants() -> str:
     """Return ITN aliases and licenses."""
     all_holders = reports.get_all_license_holders(app, 0, None)
-    htmx = htm_helpers.aliases_to_html(all_holders)
+    htmx = await htm_helpers.aliases_to_html(all_holders)
     return htmx.strip()
 
 
@@ -295,7 +339,7 @@ async def get_online_collectors() -> str:
             participant_count_1h_feed_average[address] = 0
             participant_count_1m_feed_average[address] = 0
 
-    htmx = htm_helpers.participants_count_table(
+    htmx = await htm_helpers.participants_count_table(
         participants_count_total,
         participants_count_24hr,
         participant_count_24h_feed_average,
@@ -309,14 +353,14 @@ async def get_online_collectors() -> str:
 async def get_locations_hx():
     """Return countries participating in the ITN."""
     locations = await reports.get_locations_stake_key(app)
-    return htm_helpers.locations_table(locations)
+    return await htm_helpers.locations_table(locations)
 
 
 @app.get("/locations_map", tags=[TAG_HTMX], response_class=HTMLResponse)
 async def get_locations_map_hx():
     """Return countries participating in the ITN."""
     locations = await reports.get_locations(app)
-    return htm_helpers.locations_map(locations)
+    return await htm_helpers.locations_map(locations)
 
 
 @app.get("/count_active_participants", tags=[TAG_HTMX], response_class=HTMLResponse)
@@ -330,6 +374,12 @@ async def count_active_participants():
     data = list(cursor)
     cursor.close()
     return f"{data[0][0]}"
+
+
+@app.get("/validator_price_stats_hx", tags=[TAG_HTMX], response_class=HTMLResponse)
+async def htmx_validator_price_stats() -> str:
+    price_data = await validator_price_stats()
+    return await htm_helpers.price_comparisons_section(price_data)
 
 
 def main():

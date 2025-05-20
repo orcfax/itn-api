@@ -8,7 +8,7 @@ import humanize
 logger = logging.getLogger(__name__)
 
 
-def aliases_to_html(alias_report: dict) -> str:
+async def aliases_to_html(alias_report: dict) -> str:
     """Take the alias report and convert it to HTML.
 
     e.g.
@@ -65,7 +65,7 @@ def aliases_to_html(alias_report: dict) -> str:
     return f"{head}\n{rows}\n{count_row}</table>\n"
 
 
-def participants_count_table(
+async def participants_count_table(
     participants_count_total,
     participants_count_24hr,
     participant_count_24h_feed_average,
@@ -74,7 +74,7 @@ def participants_count_table(
 ):
     """Return a table with active participant counts."""
 
-    logging.info("formatting participants table")
+    logging.info("formatting participants count table")
 
     if not participants_count_total:
         return "zero collectors online"
@@ -113,10 +113,10 @@ def participants_count_table(
     return f"{head}\n{rows}</table>\n"
 
 
-def locations_table(locations):
+async def locations_table(locations):
     """Create a table for participant locations."""
 
-    logging.info("formatting participants table")
+    logging.info("formatting participants location table")
 
     if not locations:
         return "no locations available"
@@ -157,7 +157,7 @@ def locations_table(locations):
     return f"{head}\n{rows}\n{country_count}</table>\n"
 
 
-def locations_map(locations):
+async def locations_map(locations):
     """Create a map for participant locations."""
 
     logging.info("formatting participants map")
@@ -183,6 +183,8 @@ def locations_map(locations):
 
     collectors_map.get_root().html.add_child(folium.Element(collector_count_html))
 
+    if not locations:
+        return "problem gathering collectors, please try again shortly"
     for locale in locations:
         region = locale["region"]
         country = locale["country"]
@@ -208,3 +210,64 @@ def locations_map(locations):
     )
 
     return collectors_map_html
+
+
+async def price_comparisons_section(price_data: dict) -> str:
+    """Output the ITN price comparison table so that we can start
+    to understand deviation better.
+    """
+
+    feeds = [item for item in price_data.keys()]
+
+    htm = ""
+
+    threshold = 1
+
+    for feed in feeds:
+        htm = f"{htm}<div><h3>{feed}</h3>\n"
+        summary = "<h4>summary</h4>\n"
+        htm = f"{htm}{summary}\n"
+
+        o1 = f"min values in last hour greater than {threshold}%: {price_data[feed]["breached_hourly_min"]} | range diff (%): {price_data[feed]["min_min_hourly_diff"]}"
+        o2 = f"max values in last hour greater than {threshold}%: {price_data[feed]["breached_hourly_max"]} | range diff (%): {price_data[feed]["max_max_hourly_diff"]}"
+        o3 = f"min values in last day greater than {threshold}%: {price_data[feed]["breached_daily_min"]} | range diff (%): {price_data[feed]["min_min_daily_diff"]}"
+        o4 = f"max values in last day greater than {threshold}%: {price_data[feed]["breached_daily_max"]} | range diff (%): {price_data[feed]["max_max_daily_diff"]}"
+
+        htm = f"{htm}\n<pre>{o1}\n{o2}\n{o3}\n{o4}</pre>\n</div>\n"
+
+    for feed in feeds:
+        htm = f"{htm}<div>\n"
+        summary = f"<h4>detailed: {feed}</h4>\n"
+        htm = f"{htm}{summary}\n"
+        htm = f"{htm}<table><th>price (min hour)</th><th>key</th>\n"
+        for item in price_data[feed]["min_price_hour"]:
+            price = item[0]
+            key = item[1]
+            tr = f"<tr><td>{price:1.7f}</td><td>{key}</td></tr>"
+            htm = f"{htm}{tr}\n"
+        htm = f"{htm}</table>\n<br>\n"
+        htm = f"{htm}<table><th>prices (max hour)</th><th>key</th>\n"
+        for item in price_data[feed]["max_price_hour"]:
+            price = item[0]
+            key = item[1]
+            tr = f"<tr><td>{price:1.7f}</td><td>{key}</td></tr>"
+            htm = f"{htm}{tr}\n"
+        htm = f"{htm}</table>\n<br>\n"
+        """
+        htm = f"{htm}<table><th>prices (min day)</th><th>key</th>\n"
+        for item in price_data[feed]["min_price_day"]:
+            price = item[0]
+            key = item[1]
+            tr = f"<tr><td>{price:1.7f}</td><td>{key}</td></tr>"
+            htm = f"{htm}{tr}\n"
+        htm = f"{htm}</table>\n<br>\n"
+        htm = f"{htm}<table><th>prices (max day)</th><th>key</th>\n"
+        for item in price_data[feed]["max_price_day"]:
+            price = item[0]
+            key = item[1]
+            tr = f"<tr><td>{price:1.7f}</td><td>{key}</td></tr>"
+            htm = f"{htm}{tr}\n"
+        htm = f"{htm}</table>\n<br>\n"
+        """
+
+    return htm
