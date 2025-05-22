@@ -224,7 +224,7 @@ async def price_comparisons_section(price_data: dict) -> str:
         feeds = [item for item in price_data.keys()]
     except AttributeError as err:
         # TODO: remove this once we understand server anomalies.
-        logger.error("feeds error: %s, '%s'", err, feeds)
+        logger.error("feeds error: %s, '%s'", err, price_data)
 
     htm = ""
 
