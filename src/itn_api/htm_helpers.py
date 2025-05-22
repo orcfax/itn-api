@@ -230,10 +230,10 @@ async def price_comparisons_section(price_data: dict) -> str:
         summary = "<h4>summary</h4>\n"
         htm = f"{htm}{summary}\n"
 
-        o1 = f"min values in last hour greater than {threshold}%: {price_data[feed]["breached_hourly_min"]} | range diff (%): {price_data[feed]["min_min_hourly_diff"]}"
-        o2 = f"max values in last hour greater than {threshold}%: {price_data[feed]["breached_hourly_max"]} | range diff (%): {price_data[feed]["max_max_hourly_diff"]}"
-        o3 = f"min values in last day greater than {threshold}%: {price_data[feed]["breached_daily_min"]} | range diff (%): {price_data[feed]["min_min_daily_diff"]}"
-        o4 = f"max values in last day greater than {threshold}%: {price_data[feed]["breached_daily_max"]} | range diff (%): {price_data[feed]["max_max_daily_diff"]}"
+        o1 = f"min values in last hour greater than {threshold}%: {price_data[feed]['breached_hourly_min']} | range diff (%): {price_data[feed]['min_min_hourly_diff']}"
+        o2 = f"max values in last hour greater than {threshold}%: {price_data[feed]['breached_hourly_max']} | range diff (%): {price_data[feed]['max_max_hourly_diff']}"
+        o3 = f"min values in last day greater than {threshold}%: {price_data[feed]['breached_daily_min']} | range diff (%): {price_data[feed]['min_min_daily_diff']}"
+        o4 = f"max values in last day greater than {threshold}%: {price_data[feed]['breached_daily_max']} | range diff (%): {price_data[feed]['max_max_daily_diff']}"
 
         htm = f"{htm}\n<pre>{o1}\n{o2}\n{o3}\n{o4}</pre>\n</div>\n"
 
