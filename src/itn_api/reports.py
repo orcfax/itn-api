@@ -357,7 +357,8 @@ async def get_locations(app: FastAPI) -> list:
             group by node_id;
             """
         )
-    except mariadb.Error:
+    except mariadb.Error as err:
+        logger.error("problem retrieving locations: %s", err)
         return "zero collectors online"
 
     res = list(cursor)

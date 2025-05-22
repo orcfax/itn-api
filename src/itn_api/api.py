@@ -232,7 +232,8 @@ async def validator_price_stats() -> dict:
             where date_time >= (SELECT DATE_SUB(NOW(), INTERVAL 1 DAY));
             """
         )
-    except mariadb.Error:
+    except mariadb.Error as err:
+        logger.error("problem retrieving feeds in last day: %s", err)
         return "zero collectors online"
     feeds = list(cursor)
     try:
@@ -291,6 +292,7 @@ async def get_online_collectors() -> str:
             """
         )
     except mariadb.Error:
+        logger.error("problem retrieving online collectors in last day: %s", err)
         return "zero collectors online"
 
     participants_count = list(cursor)
@@ -302,7 +304,8 @@ async def get_online_collectors() -> str:
             where date_time >= (SELECT DATE_SUB(NOW(), INTERVAL 1 DAY));
             """
         )
-    except mariadb.Error:
+    except mariadb.Error as err:
+        logger.error("problem retrieving feeds from last day: %s", err)
         return "zero collectors online"
 
     feed_count = list(cursor)
