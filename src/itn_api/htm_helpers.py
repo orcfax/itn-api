@@ -118,7 +118,8 @@ async def locations_table(locations):
 
     logging.info("formatting participants location table")
 
-    if not locations:
+    if not locations or not isinstance(locations, dict):
+        logger.error("locations table: locations is incorrect: %s", locations)
         return "no locations available"
 
     head = """
@@ -162,7 +163,8 @@ async def locations_map(locations):
 
     logging.info("formatting participants map")
 
-    if not locations:
+    if not locations or not isinstance(locations, list):
+        logger.error("locations map: locations is incorrect: %s", locations)
         return "no locations available"
 
     collectors_map = folium.Map(
