@@ -219,7 +219,12 @@ async def price_comparisons_section(price_data: dict) -> str:
     to understand deviation better.
     """
 
-    feeds = [item for item in price_data.keys()]
+    feeds = []
+    try:
+        feeds = [item for item in price_data.keys()]
+    except AttributeError as err:
+        # TODO: remove this once we understand server anomalies.
+        logger.error("feeds error: %s, '%s'", err, feeds)
 
     htm = ""
 
