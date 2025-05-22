@@ -291,7 +291,7 @@ async def get_online_collectors() -> str:
             GROUP BY address ORDER BY total_count DESC;
             """
         )
-    except mariadb.Error:
+    except mariadb.Error as err:
         logger.error("problem retrieving online collectors in last day: %s", err)
         return "zero collectors online"
 
