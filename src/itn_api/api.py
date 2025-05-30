@@ -229,7 +229,7 @@ async def validator_price_stats() -> dict:
         cursor.execute(
             """SELECT distinct feed_id
             from data_points
-            where date_time >= (SELECT DATE_SUB(NOW(), INTERVAL 1 DAY));
+            where date_time > (select date_sub(now(), interval 1 day ))
             """
         )
     except mariadb.Error as err:
@@ -240,10 +240,11 @@ async def validator_price_stats() -> dict:
         cursor.execute(
             """select address, feed_id, min(source_price), max(source_price)
             from data_points
-            where date_time < date_sub(Now(), interval 1 hour)
+            where date_time > (select date_sub(now(), interval 1 hour ))
             group by address, feed_id;
             """
         )
+
     except mariadb.Error as err:
         return {"error": f"{err}"}
     hour_data = list(cursor)
@@ -251,7 +252,7 @@ async def validator_price_stats() -> dict:
         cursor.execute(
             """select address, feed_id, min(source_price), max(source_price)
             from data_points
-            where date_time < date_sub(Now(), interval 1 day)
+            where date_time > (select date_sub(now(), interval 1 day ))
             group by address, feed_id;
             """
         )
