@@ -12,16 +12,15 @@ variable.
 # pylint: disable=W0621
 
 import argparse
+import decimal
 import importlib
 import logging
 import os
 import time
 from contextlib import asynccontextmanager
-from pathlib import Path
 from typing import Final
 
-import apsw
-import apsw.bestpractice
+import mariadb
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -80,21 +79,23 @@ tags_metadata = [
 ]
 
 
-def _enable_best_practice(connection: apsw.Connection):
-    """Enable aspw best practice."""
-    apsw.bestpractice.connection_wal(connection)
-    apsw.bestpractice.library_logging()
+def _get_database_connection() -> mariadb.Connection:
+    """Get a MriaDB database connection."""
+    connection = mariadb.connect(
+        user=os.environ["DB_USER"],
+        password=os.environ["DB_PASS"],
+        host=os.environ.get("DB_URL", "0.0.0.0"),
+        port=int(os.environ.get("DB_PORT", 3306)),
+        database=os.environ["DB_DATABASE"],
+        autocommit=True,
+    )
+    return connection
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Load the database connection for the life of the app.s"""
-    db_path = Path(os.environ["DATABASE_PATH"])
-    logger.info("validator database: %s", db_path)
-    app.state.connection = apsw.Connection(
-        str(db_path), flags=apsw.SQLITE_OPEN_READONLY
-    )
-    _enable_best_practice(app.state.connection)
+    app.state.connection = _get_database_connection()
     app.state.kupo_url = os.environ["KUPO_URL"]
     app.state.kupo_port = os.environ["KUPO_PORT"]
     yield
@@ -141,26 +142,29 @@ def redirect_root_to_docs():
 @app.get("/get_active_participants", tags=[TAG_STATISTICS])
 async def get_active_participants():
     """Return participants in the ITN database."""
+    cursor = app.state.connection.cursor()
     try:
-        participants = app.state.connection.execute(
-            "select distinct address from data_points;"
-        )
-    except apsw.SQLError as err:
+        cursor.execute("select distinct address from data_points;")
+    except mariadb.Error as err:
         return {"error": f"{err}"}
-    data = [participant[0] for participant in participants]
+    data = [participant[0] for participant in cursor]
+    cursor.close()
     return data
 
 
 @app.get("/get_participants_counts_total", tags=[TAG_STATISTICS])
 async def get_participants_counts_total():
     """Return participants total counts."""
+    cursor = app.state.connection.cursor()
     try:
-        participants_count_total = app.state.connection.execute(
+        cursor.execute(
             "select count(*) as count, address from data_points group by address order by count desc;"
         )
-    except apsw.SQLError as err:
+    except mariadb.Error as err:
         return {"error": f"{err}"}
-    return participants_count_total
+    res = list(cursor)
+    cursor.close()
+    return res
 
 
 @app.get("/get_participants_counts_day", tags=[TAG_STATISTICS])
@@ -168,8 +172,7 @@ async def get_participants_counts_day(
     date_start: str = "1970-01-01", date_end: str = "1970-01-03"
 ):
     """Return participants in ITN."""
-
-    report = reports.get_participants_counts_date_range(app, date_start, date_end)
+    report = await reports.get_participants_counts_date_range(app, date_start, date_end)
     return report
 
 
@@ -180,8 +183,10 @@ async def get_participants_counts_day_csv(
     date_start: str = "1970-01-01", date_end: str = "1970-01-03"
 ) -> str:
     """Return participants in ITN."""
-    report = reports.get_participants_counts_date_range(app, date_start, date_end)
-    csv_report = reports.generate_participant_count_csv(report)
+    logger.info("generating participant csv: get db data")
+    report = await reports.get_participants_counts_date_range(app, date_start, date_end)
+    logger.info("data retrieved for participant csv: creating count csv")
+    csv_report = await reports.generate_participant_count_csv(report)
     return csv_report
 
 
@@ -215,6 +220,52 @@ async def get_locations():
     return await reports.get_locations(app)
 
 
+@app.get("/validator_price_stats", tags=[TAG_STATISTICS])
+async def validator_price_stats() -> dict:
+    """Count active participants."""
+    cursor = app.state.connection.cursor()
+
+    try:
+        cursor.execute(
+            """SELECT distinct feed_id
+            from data_points
+            where date_time > (select date_sub(now(), interval 1 day ))
+            """
+        )
+    except mariadb.Error as err:
+        logger.error("problem retrieving feeds in last day: %s", err)
+        return "zero collectors online"
+    feeds = list(cursor)
+    try:
+        cursor.execute(
+            """select address, feed_id, min(source_price), max(source_price)
+            from data_points
+            where date_time > (select date_sub(now(), interval 1 hour ))
+            group by address, feed_id;
+            """
+        )
+
+    except mariadb.Error as err:
+        return {"error": f"{err}"}
+    hour_data = list(cursor)
+    try:
+        cursor.execute(
+            """select address, feed_id, min(source_price), max(source_price)
+            from data_points
+            where date_time > (select date_sub(now(), interval 1 day ))
+            group by address, feed_id;
+            """
+        )
+    except mariadb.Error as err:
+        return {"error": f"{err}"}
+    day_data = list(cursor)
+
+    out = await reports._analyze_price_stats(feeds, hour_data, day_data)
+
+    cursor.close()
+    return out
+
+
 # HTMX #################################################################
 # HTMX #################################################################
 # HTMX #################################################################
@@ -224,34 +275,41 @@ async def get_locations():
 async def get_itn_participants() -> str:
     """Return ITN aliases and licenses."""
     all_holders = reports.get_all_license_holders(app, 0, None)
-    htmx = htm_helpers.aliases_to_html(all_holders)
+    htmx = await htm_helpers.aliases_to_html(all_holders)
     return htmx.strip()
 
 
 @app.get("/online_collectors", tags=[TAG_HTMX], response_class=HTMLResponse)
 async def get_online_collectors() -> str:
     """Return ITN aliases and collector counts."""
+    cursor = app.state.connection.cursor()
     try:
-        participants_count = app.state.connection.execute(
+        cursor.execute(
             """SELECT address, COUNT(*) AS total_count,
-            SUM(CASE WHEN datetime(date_time) >= datetime('now', '-24 hours')
+            SUM(CASE WHEN date_time >= (SELECT DATE_SUB(NOW(), INTERVAL 1 DAY))
             THEN 1 ELSE 0 END) AS count_24hr
             FROM data_points
             GROUP BY address ORDER BY total_count DESC;
             """
         )
-    except apsw.SQLError:
+    except mariadb.Error as err:
+        logger.error("problem retrieving online collectors in last day: %s", err)
         return "zero collectors online"
 
+    participants_count = list(cursor)
+
     try:
-        feed_count = app.state.connection.execute(
+        cursor.execute(
             """SELECT distinct feed_id
             from data_points
-            where datetime(date_time) >= datetime('now', '-48 hours');
+            where date_time >= (SELECT DATE_SUB(NOW(), INTERVAL 1 DAY));
             """
         )
-    except apsw.SQLError:
+    except mariadb.Error as err:
+        logger.error("problem retrieving feeds from last day: %s", err)
         return "zero collectors online"
+
+    feed_count = list(cursor)
 
     no_feeds = len(list(feed_count))
 
@@ -280,8 +338,12 @@ async def get_online_collectors() -> str:
             participant_count_24h_feed_average[address] = 0
             participant_count_1h_feed_average[address] = 0
             participant_count_1m_feed_average = 0
+        except decimal.InvalidOperation:
+            participant_count_24h_feed_average[address] = 0
+            participant_count_1h_feed_average[address] = 0
+            participant_count_1m_feed_average[address] = 0
 
-    htmx = htm_helpers.participants_count_table(
+    htmx = await htm_helpers.participants_count_table(
         participants_count_total,
         participants_count_24hr,
         participant_count_24h_feed_average,
@@ -295,27 +357,33 @@ async def get_online_collectors() -> str:
 async def get_locations_hx():
     """Return countries participating in the ITN."""
     locations = await reports.get_locations_stake_key(app)
-    return htm_helpers.locations_table(locations)
+    return await htm_helpers.locations_table(locations)
 
 
 @app.get("/locations_map", tags=[TAG_HTMX], response_class=HTMLResponse)
 async def get_locations_map_hx():
     """Return countries participating in the ITN."""
     locations = await reports.get_locations(app)
-    return htm_helpers.locations_map(locations)
+    return await htm_helpers.locations_map(locations)
 
 
 @app.get("/count_active_participants", tags=[TAG_HTMX], response_class=HTMLResponse)
 async def count_active_participants():
     """Count active participants."""
+    cursor = app.state.connection.cursor()
     try:
-        participants = app.state.connection.execute(
-            "select count(distinct address) as count from data_points;"
-        )
-    except apsw.SQLError as err:
+        cursor.execute("select count(distinct address) as count from data_points;")
+    except mariadb.Error as err:
         return {"error": f"{err}"}
-    data = list(participants)
+    data = list(cursor)
+    cursor.close()
     return f"{data[0][0]}"
+
+
+@app.get("/validator_price_stats_hx", tags=[TAG_HTMX], response_class=HTMLResponse)
+async def htmx_validator_price_stats() -> str:
+    price_data = await validator_price_stats()
+    return await htm_helpers.price_comparisons_section(price_data)
 
 
 def main():

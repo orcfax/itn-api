@@ -33,58 +33,68 @@
       <h1>ITN diagnostics</h1>
       <section id="license-holders">
          <div>
-         <h2>License holders</h2>
-         <div
-            hx-get="{baseURL}/participants"
-            hx-trigger="load"
-            hx-swap="innerHTML"
-            />
-         </div>
+            <h2>License holders</h2>
+            <div
+               hx-get="{baseURL}/participants"
+               hx-trigger="load"
+               hx-swap="innerHTML"
+               />
+            </div>
       </section>
       <hr>
       <section id="node-counts">
-        <h2>Node counts</h2>
-        <div
-           hx-get="{baseURL}/count_active_participants"
-           hx-trigger="load"
-           hx-swap="innerHTML"
-           />
-        </div>
-     </section>
-     <hr>
+      <h2>Node counts</h2>
+      <div
+         hx-get="{baseURL}/count_active_participants"
+         hx-trigger="load"
+         hx-swap="innerHTML"
+         />
+      </div>
+      </section>
+      <hr>
       <section id="collector-counts">
-         <h2>Active collector counts</h2>
-         <div
-            hx-get="{baseURL}/online_collectors"
-            hx-trigger="every 30s"
-            hx-swap="innerHTML"
-            />
-         </div>
+      <h2>Active collector counts</h2>
+      <div
+         hx-get="{baseURL}/online_collectors"
+         hx-trigger="load, every 90s"
+         hx-swap="innerHTML"
+         />
+      </div>
+      </section>
+      <hr>
+      <section id="price comparisons">
+      <h2>Price comparisons</h2>
+      <div
+         hx-get="{baseURL}/validator_price_stats_hx"
+         hx-trigger="load, every 300s"
+         hx-swap="innerHTML"
+         />
+      </div>
       </section>
       <hr>
       <section id="locations map">
-        <center><h2>Collector map</h2></center>
-        <div
-           hx-get="{baseURL}/locations_map"
-           hx-trigger="load"
-           hx-swap="innerHTML"
-           />
-        </div>
-     </section>
-     <hr>
+      <center><h2>Collector map</h2></center>
+      <div
+         hx-get="{baseURL}/locations_map"
+         hx-trigger="load"
+         hx-swap="innerHTML"
+         />
+      </div>
+      </section>
+      <hr>
       <section id="locations">
-         <h2>Collector locations</h2>
-         <div
-            hx-get="{baseURL}/locations"
-            hx-trigger="load"
-            hx-swap="innerHTML"
-            />
-         </div>
+      <h2>Collector locations</h2>
+      <div
+         hx-get="{baseURL}/locations"
+         hx-trigger="load"
+         hx-swap="innerHTML"
+         />
+      </div>
       </section>
       <hr>
       <div class="footer__bottom text--center">
-         <div class="footer__copyright">ITN | Diagnostics</div>
+      <div class="footer__copyright">ITN | Diagnostics</div>
       </div>
-    </div>
+      </div>
    </body>
 </html>

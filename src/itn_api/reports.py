@@ -6,10 +6,11 @@ import json
 import logging
 from collections import Counter
 from dataclasses import dataclass
+from itertools import combinations
 from typing import List, Tuple
 
-import apsw
 import humanize
+import mariadb
 from fastapi import FastAPI
 
 try:
@@ -85,7 +86,7 @@ def get_all_license_holders_csv(app: FastAPI, min_stake: int, sort: str) -> str:
         )
     csv = "idx,staking,license,value\n"
     for idx, data in enumerate(alias_addr_data, 1):
-        stake = humanize.intcomma(data.staked).replace(",", ".")
+        stake = humanize.intcomma(data.staked).replace(",", "")
         csv = f"{csv}{idx:0>4}, {data.staking}, {' '.join(data.licenses)}, {stake}\n"
     return csv
 
@@ -158,7 +159,10 @@ def _get_addr_minute_feed_dicts(data: list, addresses: list):
         for item in data:
             if item[0] != addr:
                 continue
-            minutes = item[1].rsplit(":", 1)[0].strip()
+            # SPLIT MINUTES OUT HERE FOR EVENTUAL DEDUPE...
+            # SPLIT MINUTES OUT HERE FOR EVENTUAL DEDUPE...
+            # SPLIT MINUTES OUT HERE FOR EVENTUAL DEDUPE...
+            minutes = str(item[1]).rsplit(":", 1)[0].strip()
             feed = item[2].strip()
             addr_minute_values = helpers.update_dict(
                 addr_minute_values, addr, f"{feed}|{minutes}"
@@ -195,9 +199,11 @@ def _process_json_report(
     days_in_range = minutes_in_range / helpers.MINUTES_DAY
     counts = {}
     for addr, value in addr_minute_values.items():
-        total_mins = len(set(value))
+        total_mins = len(value)
         average_mins = total_mins / len(set(feeds))
         license_name, stake = _get_license_and_stake(address_data, addr)
+        feeds_sorted = addr_feed_values[addr]
+        feeds_sorted.sort()
         counts[addr] = {
             "license": license_name,
             "stake": stake,
@@ -206,8 +212,7 @@ def _process_json_report(
             "total_mins_in_date_range": minutes_in_range,
             "number_of_feeds_collected": len(set(addr_feed_values[addr])),
             "feeds_count": [
-                f"{key}: {value}"
-                for key, value in Counter(addr_feed_values[addr]).items()
+                f"{key}: {value}" for key, value in Counter(feeds_sorted).items()
             ],
         }
     report = {}
@@ -222,17 +227,29 @@ def _process_json_report(
 
 
 @helpers.timeit
-def get_participants_counts_date_range(
+async def get_participants_counts_date_range(
     app: FastAPI, date_start: str, date_end: str
 ) -> dict:
     """Return participants report by date range."""
+
     data = _get_participant_data_by_date_range(app, date_start, date_end)
     feeds, addresses = _get_unique_feeds(data)
     logger.info("no feeds: '%s'", len(feeds))
     logger.info("no addresses: '%s'", len(feeds))
     addr_minute_values, addr_feed_values = _get_addr_minute_feed_dicts(data, addresses)
-    addr_minute_values = helpers.dedupe_dicts(addr_minute_values)
+
+    # Remove dedupe for now, and look at all minute values we receive
+    # to perform a full count.
+    #
+    # `addr_minute_values`` is a dict ordered by stake key, with a list
+    # of feed+minutes for the era of participation as the value.
+    #
+    # addr_minute_values = helpers.dedupe_dicts(addr_minute_values)
+
+    logger.info("retrieving data from kupo")
     address_data = _get_basic_addr_data(app.state.kupo_url, app.state.kupo_port)
+    logger.info("processing json report")
+
     report = _process_json_report(
         address_data, date_start, date_end, addr_minute_values, addr_feed_values, feeds
     )
@@ -243,19 +260,22 @@ def _get_participant_data_by_date_range(
     app: FastAPI, date_start: str, date_end: str
 ) -> list:
     """Query the database and get the results."""
-    participants = app.state.connection.execute(
+    cursor = app.state.connection.cursor()
+    cursor.execute(
         f"""
             select address, date_time, feed_id
             from data_points
-            where date_time > date('{date_start}')
-            and date_time < date('{date_end}')
+            where date_time > '{date_start}'
+            and date_time < '{date_end}'
             order by address;
         """
     )
-    return list(participants)
+    res = list(cursor)
+    cursor.close()
+    return res
 
 
-def generate_participant_count_csv(report: dict) -> str:
+async def generate_participant_count_csv(report: dict) -> str:
     """Convert JSON data into a CSV for ease of use."""
 
     max_possible = report.get("max_possible_data_points")
@@ -268,8 +288,21 @@ def generate_participant_count_csv(report: dict) -> str:
     rows = []
     for stake_addr, value in data.items():
         participant = stake_addr
-        license_no = value.get("license", "").replace("Validator License", "").strip()
-        stake = humanize.intcomma(int(value.get("stake", 0))).replace(",", ".")
+        try:
+            license_no = (
+                value.get("license", "").replace("Validator License", "").strip()
+            )
+        except AttributeError:
+            logger.error(
+                "cannot retrieve license no from: value '%s' stake: '%s'",
+                value,
+                stake_addr,
+            )
+            license_no = "deregistered"
+        try:
+            stake = humanize.intcomma(int(value.get("stake", 0))).replace(",", "")
+        except TypeError:
+            stake = 0
         total_data_points = value.get("total_data_points", 0)
         average_per_feed = value.get("average_mins_collecting_per_feed", 0)
         total_collected = value.get("number_of_feeds_collected", 0)
@@ -297,10 +330,10 @@ def generate_participant_count_csv(report: dict) -> str:
 
 async def get_date_ranges(app: FastAPI):
     """Return min and max dates from the database."""
-    min_max_dates = app.state.connection.execute(
-        "select min(date_time), max(date_time) from data_points;"
-    )
-    dates = list(min_max_dates)[0]
+    cursor = app.state.connection.cursor()
+    cursor.execute("select min(date_time), max(date_time) from data_points;")
+    dates = list(cursor)[0]
+    cursor.close()
     return {
         "earliest_date": dates[0],
         "latest_date": dates[1],
@@ -315,14 +348,21 @@ async def get_locations(app: FastAPI) -> list:
       * https://stackoverflow.com/a/571487
 
     """
+    cursor = app.state.connection.cursor()
     try:
-        unique_raw_data = app.state.connection.execute(
-            "select min(node_id), raw_data from data_points group by node_id;"
+        cursor.execute(
+            """select min(node_id), raw_data
+            from data_points
+            where date_time >= (SELECT date_sub(Now(), interval 60 minute))
+            group by node_id;
+            """
         )
-    except apsw.SQLError:
+    except mariadb.Error as err:
+        logger.error("problem retrieving locations: %s", err)
         return "zero collectors online"
 
-    res = list(unique_raw_data)
+    res = list(cursor)
+    cursor.close()
     countries = []
     for item in res:
         node = item[0]
@@ -356,18 +396,22 @@ async def get_locations_stake_key(app: FastAPI) -> list:
       * https://stackoverflow.com/a/571487
 
     """
+    cursor = app.state.connection.cursor()
     try:
-        unique_raw_data = app.state.connection.execute(
+        cursor.execute(
             """select node_id, raw_data, min(address), date_time
             from data_points
-            where datetime(date_time) >= datetime('now', '-24 hours')
+            where date_time >= (SELECT DATE_SUB(NOW(), INTERVAL 60 minute))
             group by address;
             """
         )
-    except apsw.SQLError:
-        return "zero collectors online"
+    except mariadb.Error as err:
+        logger.error("mariadb error getting location data: %s", err)
+        return {}
 
-    res = list(unique_raw_data)
+    res = list(cursor)
+
+    cursor.close()
     key_loc = {}
     for item in res:
         node = item[0]
@@ -385,4 +429,124 @@ async def get_locations_stake_key(app: FastAPI) -> list:
             key_loc[address] = country
         except KeyError as err:
             logger.error("node: '%s' not reporting location (%s)", node, err)
+            return {}
     return key_loc
+
+
+async def _analyze_price_stats(feeds: list, hour_data: list, day_data: list):
+    """Output an analysis of our price statistics.
+
+    NB. this function is looking a little unweildy. How can we refactor it
+    or take advantage of another approach?
+    """
+    out = {}
+    for feed in feeds:
+        hourly_min = []
+        hourly_max = []
+        hourly_vals_min = []
+        hourly_vals_max = []
+        for item in hour_data:
+            if item[1] == feed[0]:
+                hourly_min.append((item[2], item[0]))
+                hourly_max.append((item[3], item[0]))
+                hourly_vals_min.append(item[2])
+                hourly_vals_max.append(item[3])
+        daily_min = []
+        daily_max = []
+        daily_vals_min = []
+        daily_vals_max = []
+        for item in day_data:
+            if item[1] == feed[0]:
+                daily_min.append((item[2], item[0]))
+                daily_max.append((item[3], item[0]))
+                daily_vals_min.append(item[2])
+                daily_vals_max.append(item[3])
+
+        hourly_min = sorted(hourly_min, key=lambda t: (t[0], -t[0]), reverse=False)
+        daily_min = sorted(daily_min, key=lambda t: (t[0], -t[0]), reverse=False)
+        hourly_max = sorted(hourly_max, key=lambda t: (t[0], -t[0]), reverse=True)
+        daily_max = sorted(daily_max, key=lambda t: (t[0], -t[0]), reverse=True)
+
+        hourly_min_compare = [
+            (a, b, (100 - a / b * 100) > 1) for a, b in combinations(hourly_vals_min, 2)
+        ]
+        hourly_max_compare = [
+            (a, b, (100 - a / b * 100) > 1) for a, b in combinations(hourly_vals_max, 2)
+        ]
+        daily_min_compare = [
+            (a, b, (100 - a / b * 100) > 1) for a, b in combinations(daily_vals_min, 2)
+        ]
+        daily_max_compare = [
+            (a, b, (100 - a / b * 100) > 1) for a, b in combinations(daily_vals_max, 2)
+        ]
+
+        min_hourly_threshold = False
+        max_hourly_threshold = False
+        min_daily_threshold = False
+        max_daily_threshold = False
+        for item in hourly_min_compare:
+            if item[2] is False:
+                continue
+            min_hourly_threshold = item
+        for item in hourly_max_compare:
+            if item[2] is False:
+                continue
+            max_hourly_threshold = item
+        for item in daily_min_compare:
+            if item[2] is False:
+                continue
+            min_daily_threshold = item
+        for item in daily_max_compare:
+            if item[2] is False:
+                continue
+            max_daily_threshold = item
+
+        min_max_hourly_min = (min(hourly_vals_min), max(hourly_vals_min))
+        min_hourly_percentage_diff = 100 - (
+            (min(hourly_vals_min) / max(hourly_vals_min)) * 100
+        )
+        min_max_hourly_max = (min(hourly_vals_max), max(hourly_vals_max))
+        max_hourly_percentage_diff = (
+            100 - min(hourly_vals_max) / max(hourly_vals_max) * 100
+        )
+        min_max_daily_min = (min(daily_vals_min), max(daily_vals_min))
+        min_daily_percentage_diff = 100 - (
+            (min(daily_vals_min) / max(daily_vals_min)) * 100
+        )
+        min_max_daily_max = (min(daily_vals_min), max(daily_vals_max))
+        max_daily_percentage_diff = 100 - (
+            (min(daily_vals_max) / max(daily_vals_max)) * 100
+        )
+
+        out[feed[0]] = {
+            "breached_hourly_min": min_hourly_threshold,
+            "breached_hourly_max": max_hourly_threshold,
+            "breached_daily_min": min_daily_threshold,
+            "breached_daily_max": max_daily_threshold,
+            "hourly_min": {
+                "min": min_max_hourly_min[0],
+                "max": min_max_hourly_min[1],
+            },
+            "min_max_hourly_max": {
+                "min": min_max_hourly_max[0],
+                "max": min_max_hourly_max[1],
+            },
+            "min_max_daily_min": {
+                "min": min_max_daily_min[0],
+                "max": min_max_daily_min[1],
+            },
+            "min_max_daily_max": {
+                "min": min_max_daily_max[0],
+                "max": min_max_daily_max[1],
+            },
+            "min_min_hourly_diff": min_hourly_percentage_diff,
+            "max_max_hourly_diff": max_hourly_percentage_diff,
+            "min_min_daily_diff": min_daily_percentage_diff,
+            "max_max_daily_diff": max_daily_percentage_diff,
+            "min_price_day": daily_min,
+            "min_price_hour": hourly_min,
+            "max_price_day": daily_max,
+            "max_price_hour": hourly_max,
+        }
+
+    return out

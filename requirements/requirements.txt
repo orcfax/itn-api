@@ -1,8 +1,8 @@
 # requirements for the production project.
 
-apsw==3.46.1.0
-fastapi==0.115.3
-humanize==4.11.0
-simple-sign==0.1.0-rc.6
-uvicorn==0.32.0
-folium==0.19.3
+fastapi==0.115.12
+humanize==4.12.2
+mariadb==1.1.12
+simple-sign==0.1.0-rc.7
+uvicorn==0.34.0
+folium==0.19.5
